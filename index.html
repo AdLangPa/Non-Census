@@ -1,0 +1,4601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Non-Census</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─────── PALETTE (single committed RAW set) ─────── */
+:root {
+  --paper: #fffceb;       /* cream */
+  --yellow: #f5e94a;      /* signal yellow */
+  --red: #e02d2a;         /* tomato red */
+  --ink: #1a1a1a;         /* near-black */
+  --ink-soft: #2a2a2a;
+  --paper-2: #f6efd6;     /* slightly darker cream for surfaces */
+  --paper-3: #ebe3c5;
+  --paper-hover: #f1e9c8;
+  --input-bg: #fffceb;
+  /* Aliases used widely below */
+  --bg: var(--paper);
+  --surface: var(--paper);
+  --surface-2: var(--paper-2);
+  --surface-3: var(--paper-3);
+  --surface-hover: var(--paper-hover);
+  --text: var(--ink);
+  --text-off: #4a4a4a;
+  --text-muted: #6e6e6e;
+  --text-subtle: #a39c7c;
+  --border-subtle: rgba(26,26,26,0.10);
+  --border: rgba(26,26,26,0.22);
+  --border-strong: rgba(26,26,26,0.45);
+  --border-bold: var(--ink);
+  --accent: var(--red);
+  --accent-hover: #b8211f;
+  --accent-tint: rgba(224,45,42,0.10);
+  --accent-soft: rgba(224,45,42,0.05);
+  --danger: var(--red);
+  --danger-tint: rgba(224,45,42,0.12);
+  --shadow: 0 2px 0 var(--ink);
+  --hard-shadow: 4px 4px 0 var(--ink);
+  /* Type stack */
+  --display: 'Bungee', sans-serif;
+  --serif: 'Fraunces', Georgia, serif;
+  --mono: 'DM Mono', ui-monospace, monospace;
+  --sans: 'Fraunces', Georgia, serif; /* body uses Fraunces too — we don't need a second sans */
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--serif);
+  overflow: hidden; user-select: none;
+  text-align: center;
+}
+
+/* Halftone + texture utilities — used throughout */
+.tx-halftone {
+  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
+  background-size: 8px 8px;
+}
+.tx-halftone-tight { background-image: radial-gradient(var(--ink) 1px, transparent 1.2px); background-size: 5px 5px; }
+.tx-stripes {
+  background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(26,26,26,0.08) 8px 9px);
+}
+
+/* Page-level texture: a faint halftone on the whole body so even bare slides have grain */
+@keyframes bg-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 6px 6px; }
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(26,26,26,0.18) 1px, transparent 1.2px);
+  background-size: 6px 6px;
+  opacity: 0.18;
+  z-index: 1;
+  mix-blend-mode: multiply;
+  animation: bg-drift 4s linear infinite;
+}
+
+#deck { width: 100%; height: 100%; position: relative; }
+
+
+/* ─────── SLIDES ─────── */
+.slide {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow: hidden;
+  background: var(--bg);
+}
+.slide.active { opacity: 1; pointer-events: all; }
+
+/* Frame is fixed at 1280×720 logical pixels. JS scales it to fit the window via
+   transform:scale, keeping it centered. cqmin inside resolves to 7.2px always. */
+.slide-frame {
+  width: 1280px;
+  height: 720px;
+  flex-shrink: 0;
+  position: relative;
+  container-type: size;
+  container-name: frame;
+  overflow: hidden;
+  background: var(--bg);
+  transform-origin: center center;
+  /* Centering fallback for when JS hasn't run yet */
+  display: grid; align-content: center;
+  text-align: center;
+}
+.slide-frame > * { text-align: center; width: 100%; }
+
+/* Question slides: flex column, vertically centered, left-aligned content */
+.q-slide .slide-frame {
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: stretch;
+  text-align: left;
+  padding: 40px 72px;
+  gap: 24px;
+}
+.q-slide .slide-frame > * { width: 100%; }
+
+/* ─────── NAV / HINT ─────── */
+#nav {
+  position: fixed; bottom: 28px; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  z-index: 100; flex-wrap: wrap; padding: 0 20px;
+}
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border-strong); transition: background 0.2s, transform 0.2s; cursor: pointer;
+}
+.nav-dot.active { background: var(--text); transform: scale(1.3); }
+
+#hint {
+  position: fixed; bottom: 28px; right: 24px;
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase;
+  z-index: 100;
+}
+
+/* ─────── PICKER ─────── */
+.picker-inner { max-width: 720px; margin: 0 auto; }
+.picker-logo {
+  font-family: var(--mono);
+  font-size: 14px; font-weight: 700; letter-spacing: 0.4em;
+  color: var(--text-muted); text-transform: uppercase; margin-bottom: 24px;
+}
+.picker-title {
+  font-family: var(--mono);
+  font-size: clamp(32px, 5vw, 52px); font-weight: 900;
+  color: var(--text); margin-bottom: 8px;
+}
+.picker-sub { font-size: 15px; color: var(--text-off); margin-bottom: 32px; }
+.episode-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px; margin-bottom: 24px; text-align: left;
+}
+.episode-card {
+  padding: 18px 20px; border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.episode-card:hover { border-color: var(--accent); background: var(--surface-hover); }
+.episode-card.demo { border-style: dashed; }
+.ep-name {
+  font-family: var(--mono); font-size: 20px;
+  font-weight: 800; color: var(--text); text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ep-meta {
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase;
+}
+.picker-actions {
+  display: flex; gap: 12px; justify-content: center; margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+/* ─────── BUTTONS ─────── */
+.btn {
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 12px 24px; border: 1px solid var(--border); background: transparent;
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+}
+.btn:hover { border-color: var(--border-bold); background: var(--surface-hover); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-danger { color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger-tint); color: var(--danger); border-color: var(--danger); }
+.btn-sm { font-size: 11px; padding: 6px 12px; letter-spacing: 0.15em; }
+
+/* ─────── SETUP ─────── */
+.setup-inner { max-width: 600px; margin: 0 auto; }
+.setup-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.4em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 12px;
+}
+.setup-title {
+  font-family: var(--mono);
+  font-size: clamp(32px, 5vw, 52px); font-weight: 900;
+  color: var(--text); margin-bottom: 8px;
+}
+.setup-sub { font-size: 15px; color: var(--text-off); margin-bottom: 32px; }
+.setup-roster {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 28px; max-width: 540px; margin-left: auto; margin-right: auto;
+}
+.setup-roster-card {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 18px; border: 1px solid var(--border); background: var(--surface);
+}
+.setup-roster-photo {
+  width: 96px; height: 96px;
+  object-fit: cover; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  display: block;
+}
+.setup-roster-photo-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-subtle);
+}
+.setup-roster-photo-placeholder svg { width: 50%; height: 50%; }
+.setup-roster-name {
+  font-family: var(--mono);
+  font-size: 22px; font-weight: 800; color: var(--text);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.setup-empty {
+  padding: 24px; margin-bottom: 28px;
+  border: 1px dashed var(--border); background: var(--surface);
+  color: var(--text-muted); font-style: italic;
+  font-size: 14px;
+}
+.setup-actions { display: flex; flex-direction: column; gap: 10px; }
+.setup-btn {
+  background: var(--accent); color: #fff;
+  font-family: var(--mono); font-size: 20px; font-weight: 800;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 16px 48px; border: none; cursor: pointer;
+  transition: background 0.2s; width: 100%;
+}
+.setup-btn:hover:not([disabled]) { background: var(--accent-hover); }
+.setup-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+.setup-link {
+  font-size: 13px; color: var(--text-muted);
+  cursor: pointer; text-decoration: underline; background: none; border: none;
+  font-family: inherit;
+}
+.setup-link:hover { color: var(--text-off); }
+
+/* ─────── TITLE ─────── */
+.slide.title-slide { background: var(--yellow); }
+@keyframes bg-drift-14 {
+  from { background-position: 0 0; }
+  to   { background-position: 14px 14px; }
+}
+.slide.title-slide .slide-frame::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--ink) 1.4px, transparent 1.6px);
+  background-size: 9px 9px;
+  opacity: 0.16; pointer-events: none;
+  animation: bg-drift 5s linear infinite;
+}
+.slide.title-slide .slide-frame::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--red) 1.4px, transparent 1.6px);
+  background-size: 14px 14px;
+  opacity: 0.30; pointer-events: none;
+  mix-blend-mode: multiply;
+  animation: bg-drift-14 8s linear infinite;
+}
+/* Chrome decorations removed: sparks, tape strips, torn band, "No. 003" text */
+.title-spark, .title-tape, .title-band, .title-band-text { display: none !important; }
+.wordmark {
+  font-family: var(--display);
+  font-size: 101px; font-weight: 400;
+  letter-spacing: -0.02em; line-height: 0.85; color: var(--ink);
+  position: relative; z-index: 4;
+  text-align: center;
+}
+.wordmark .splat {
+  display: inline-block;
+  background: var(--red); color: var(--yellow);
+  padding: 0 0.08em;
+  transform: rotate(-3deg) skewX(-4deg);
+  margin: 0 -0.04em;
+}
+.wordmark span { color: var(--red); }
+.wordmark-logo {
+  display: block; margin: 0 auto;
+  max-width: 80%; max-height: 324px;
+  width: auto; height: auto;
+  object-fit: contain;
+  position: relative; z-index: 4;
+}
+.tagline {
+  margin-top: 17px; font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase;
+  position: relative; z-index: 4;
+  background: var(--ink); color: var(--yellow);
+  display: inline-block; padding: 4px 10px;
+  transform: rotate(-1deg);
+}
+
+/* ─────── CONTESTANT SLIDE ─────── */
+.slide[data-type="contestant"] { background: var(--paper); }
+.slide[data-type="contestant"] .slide-frame::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
+  background-size: 9px 9px;
+  opacity: 0.10; pointer-events: none;
+}
+.contestant-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 36px;
+  width: 100%;
+}
+.contestant-photo-wrap {
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.contestant-photo-wrap::before,
+.contestant-photo-wrap::after {
+  content: ''; position: absolute;
+  width: 65px; height: 14px;
+  background: rgba(245,233,74,0.85);
+  border: 0.5px solid rgba(0,0,0,0.20);
+  z-index: 3; pointer-events: none;
+}
+.contestant-photo-wrap::before { top: -2%; left: 8%; transform: rotate(-7deg); }
+.contestant-photo-wrap::after { bottom: -2%; right: 8%; transform: rotate(6deg); background: rgba(224,45,42,0.55); }
+.contestant-photo {
+  width: 100%; max-width: 317px;
+  aspect-ratio: 1 / 1; object-fit: cover;
+  border: 3px solid var(--ink);
+  background: var(--surface-2);
+  display: block; position: relative; z-index: 2;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.contestant-photo-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-subtle);
+}
+.contestant-photo-placeholder svg { width: 45%; height: 45%; }
+.slide[data-type="contestant"] .slide-frame {
+  padding: 48px 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.contestant-text { text-align: left; }
+/* "Contestant X of Y" eyebrow — hidden, generated text */
+.contestant-eyebrow { display: none !important; }
+.contestant-name {
+  font-family: var(--display);
+  font-size: 72px; font-weight: 400;
+  line-height: 0.9; color: var(--ink);
+  letter-spacing: -0.02em;
+  margin-bottom: 17px;
+  text-transform: uppercase;
+}
+.contestant-subtext {
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 400;
+  line-height: 1.45; color: var(--ink); opacity: 0.85;
+}
+.contestant-subtext em { color: var(--red); font-style: italic; font-weight: 700; }
+.contestant-subtext strong { color: var(--ink); font-weight: 700; }
+
+/* ─────── QUESTIONS ─────── */
+/* q-slide layout is handled by .q-slide .slide-frame above */
+.slide.q-slide { background: var(--paper); }
+.slide.q-slide .slide-frame::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
+  background-size: 9px 9px;
+  opacity: 0.08; pointer-events: none; z-index: 0;
+  animation: bg-drift 6s linear infinite;
+}
+.slide.q-slide .slide-frame > * { position: relative; z-index: 1; width: 100%; }
+.q-format-label { display: none !important; }
+.q-text {
+  font-family: var(--serif); font-style: italic;
+  font-size: 62px; font-weight: 900;
+  line-height: 1.04; color: var(--ink);
+  letter-spacing: -0.018em;
+  text-align: center !important;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  flex: 0 1 auto;
+}
+.q-text em { font-style: italic; color: var(--ink); font-weight: 900; }
+.q-text strong { color: var(--ink); font-weight: 900; }
+.q-slide.revealed .q-text { font-size: 44px; }
+.q-slide.revealed.q-name-slide .q-text { font-size: 32px; }
+.q-slide.revealed.q-guess-slide .q-text { font-size: 44px; }
+.q-slide.revealed.q-break-slide .q-text { font-size: 40px; }
+.q-text-sm {
+  font-family: var(--serif); font-style: italic;
+  font-size: 52px; font-weight: 900;
+  line-height: 1.05; color: var(--ink); letter-spacing: -0.018em;
+  text-align: center !important;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.q-slide.revealed .q-text-sm { font-size: 36px; }
+.q-slide.revealed.q-name-slide .q-text-sm { font-size: 26px; }
+.q-slide.revealed.q-guess-slide .q-text-sm { font-size: 36px; }
+.q-source { display: none; }
+
+/* Two-choice */
+.q-options {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  width: 100%;
+}
+.q-option {
+  position: relative;
+  padding: 28px 32px;
+  border: 3px solid var(--ink);
+  background: #fff;
+  text-align: center;
+  transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+.q-option.q-option-a { transform: rotate(-0.5deg); }
+.q-option.q-option-b { transform: rotate(0.4deg); }
+.q-option-label {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.q-option-text {
+  font-family: var(--display);
+  font-size: 36px; font-weight: 400;
+  color: var(--ink); line-height: 1.05;
+  text-transform: uppercase; letter-spacing: -0.01em;
+}
+.q-option-pct {
+  font-family: var(--display);
+  font-size: 64px; font-weight: 400;
+  color: var(--red); margin-top: 10px; line-height: 0.9;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.revealed .q-option { transition: transform 0.45s ease, background 0.45s ease, box-shadow 0.45s ease; }
+.revealed .q-option.winner {
+  background: var(--yellow); border-color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: rotate(-1.2deg); z-index: 4;
+}
+.revealed .q-option:not(.winner) { opacity: 0.55; transform: rotate(0.6deg); }
+.revealed .q-option-pct { opacity: 1; transform: translateY(0); }
+.revealed .q-option.winner .q-option-pct { color: var(--red); }
+.q-slide.revealed::after {
+  content: ''; position: absolute;
+  top: 6%; left: 14%; width: 38%; height: 3px;
+  background: rgba(224,45,42,0.78);
+  border: 0.5px solid rgba(0,0,0,0.18);
+  transform: rotate(-3deg);
+  pointer-events: none; z-index: 3;
+}
+.q-slide .reveal-burst { display: none; }
+.q-slide.revealed > .slide-frame > .reveal-burst {
+  display: block;
+  position: absolute; top: 4%; right: 6%;
+  font-family: var(--display); color: var(--red);
+  font-size: 43px; transform: rotate(8deg);
+  z-index: 4; pointer-events: none; line-height: 1;
+}
+
+/* Over or Under */
+.q-ou-options { display: flex; gap: 20px; justify-content: center; width: 100%; }
+.q-ou-btn {
+  font-family: var(--display); font-size: 36px; font-weight: 400;
+  letter-spacing: -0.01em; text-transform: uppercase; padding: 16px 56px;
+  border: 3px solid var(--ink); color: var(--ink); background: #fff;
+  transition: all 0.3s;
+}
+/* Number area: baseline + actual stacked */
+.q-ou-number-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; gap: 0;
+}
+.q-ou-number {
+  font-family: var(--display);
+  font-size: 160px; font-weight: 400;
+  color: var(--ink); line-height: 0.9;
+  text-align: center;
+  position: relative; display: inline-block;
+}
+/* Red pen scratch — diagonal line through baseline on reveal */
+.q-ou-number::after {
+  content: '';
+  position: absolute;
+  left: -6%; top: 52%;
+  width: 112%; height: 10px;
+  background: var(--red);
+  border-radius: 5px;
+  transform: rotate(-6deg) translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.25s ease 0.1s;
+}
+.revealed .q-ou-number::after { opacity: 1; }
+/* Actual answer number — hidden pre-reveal, appears in red below */
+.q-ou-actual {
+  font-family: var(--display);
+  font-size: 120px; font-weight: 400;
+  color: var(--red); line-height: 0.9;
+  text-align: center;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.4s ease 0.25s, transform 0.4s ease 0.25s;
+}
+.revealed .q-ou-actual { opacity: 1; transform: translateY(0); }
+.revealed .winner-ou {
+  background: var(--yellow); color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: rotate(-1.2deg);
+}
+.revealed .q-ou-options .q-ou-btn:not(.winner-ou) { opacity: 0.45; transform: rotate(0.6deg); }
+/* Legacy note — hidden in new design */
+.q-ou-answer { display: none !important; }
+
+/* Guess-the-percentage */
+.q-guess-answer {
+  font-family: var(--display);
+  font-size: 200px; font-weight: 400;
+  color: var(--red); line-height: 0.9;
+  text-align: center; width: 100%;
+  opacity: 0; transform: translateY(7px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.revealed .q-guess-answer { opacity: 1; transform: translateY(0); }
+.q-guess-note {
+  font-family: var(--serif); font-style: italic;
+  font-size: 19px; color: var(--ink);
+  text-align: center; width: 100%;
+  opacity: 0; transition: opacity 0.5s ease 0.15s;
+}
+.q-guess-note strong { color: var(--red); }
+.revealed .q-guess-note { opacity: 1; }
+
+/* Tiebreaker */
+.q-tiebreaker-label {
+  font-family: var(--display); font-size: 14px; font-weight: 400;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  background: var(--red); color: var(--yellow);
+  padding: 6px 20px; text-align: center; width: 100%;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.q-tiebreaker-answer {
+  font-family: var(--display);
+  font-size: 200px; font-weight: 400;
+  color: var(--red); line-height: 0.9;
+  text-align: center; width: 100%;
+  opacity: 0; transform: translateY(7px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.revealed .q-tiebreaker-answer { opacity: 1; transform: translateY(0); }
+.q-data-slide .slide-frame {
+  display: flex; flex-direction: column;
+  justify-content: flex-start; align-items: stretch;
+  padding: 32px 64px 28px;
+  gap: 12px;
+}
+.q-data-question {
+  font-family: var(--serif); font-style: italic;
+  font-size: 34px; font-weight: 900;
+  line-height: 1.12; color: var(--ink);
+  text-align: center !important;
+  text-wrap: balance;
+  flex: 0 0 auto;
+}
+/* Blank underline: always visible pre-reveal */
+.q-data-blank {
+  display: inline-block;
+  min-width: 2em;
+  border-bottom: 5px solid var(--ink);
+  margin: 0 6px;
+  vertical-align: baseline;
+}
+/* Inline answer (hidden — we use the separate big answer instead) */
+.q-data-answer-word { display: none; }
+/* Big answer reveal — separate element, appears on reveal */
+.q-data-answer-reveal {
+  font-family: var(--display);
+  font-size: 72px; font-weight: 400;
+  color: var(--red);
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  flex: 0 0 auto;
+}
+.q-data-slide.revealed .q-data-answer-reveal {
+  opacity: 1; transform: translateY(0);
+}
+/* Bar chart area */
+.q-data-chart {
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+.q-data-chart svg {
+  width: 100%; height: 100%;
+  display: block;
+}
+.q-data-placeholder {
+  width: 100%; flex: 1 1 0;
+  border: 3px dashed var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); font-style: italic; font-size: 18px;
+}
+
+/* Name as many */
+.q-name-prompt {
+  font-family: var(--mono);
+  font-size: 14px; letter-spacing: 0.3em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px;
+}
+.q-name-list {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 10px; width: 100%;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+.revealed .q-name-list { opacity: 1; }
+.q-name-item {
+  padding: 20px 16px;
+  border: 3px solid var(--ink); background: var(--surface);
+  font-family: var(--display); font-size: 22px; font-weight: 400;
+  color: var(--ink); text-align: center; text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.q-name-item .pct { color: var(--accent); font-weight: 800; margin-left: 8px; }
+.q-name-stat {
+  font-family: var(--mono); font-size: 28px; font-weight: 700;
+  color: var(--text); text-align: center; width: 100%;
+  opacity: 0; transition: opacity 0.5s ease 0.1s;
+}
+.q-name-stat em { font-style: normal; color: var(--accent); }
+.revealed .q-name-stat { opacity: 1; }
+
+/* Guess the Breakdown */
+.q-break-rows { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.q-break-row {
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: center; gap: 20px;
+  padding: 18px 26px;
+  border: 2px solid var(--border); background: var(--surface);
+}
+.q-break-label {
+  font-family: var(--mono); font-size: 28px; font-weight: 700;
+  color: var(--text); text-align: left; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.q-break-pct {
+  font-family: var(--mono); font-size: 44px; font-weight: 900;
+  color: var(--accent); min-width: 3ch; text-align: right;
+  opacity: 0; transform: translateX(-4px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.revealed .q-break-pct { opacity: 1; transform: translateX(0); }
+
+/* ─────── RANKING ─────── */
+/* Scatter tiles — pre-reveal items floating in stage */
+.q-rank-stage {
+  position: relative;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 80px;
+}
+.q-rank-tile {
+  position: absolute;
+  left: var(--rx, 50%); top: var(--ry, 50%);
+  transform: translate(-50%, -50%) rotate(var(--rrot, 0deg));
+  padding: 10px 16px;
+  border: 3px solid var(--ink);
+  background: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  max-width: 200px;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.q-rank-tile-name {
+  font-family: var(--display); font-size: 20px; font-weight: 400;
+  color: var(--ink); text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 1.1;
+  overflow-wrap: break-word;
+}
+.q-rank-tile-stat {
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  color: var(--red); margin-top: 3px; letter-spacing: 0.04em;
+}
+/* Compact for 7+ items — slightly smaller so 9 items fit */
+.q-rank-stage[data-many="true"] .q-rank-tile {
+  padding: 8px 12px; max-width: 210px;
+}
+.q-rank-stage[data-many="true"] .q-rank-tile-name { font-size: 18px; }
+.q-rank-stage[data-many="true"] .q-rank-tile-stat { font-size: 12px; }
+.q-rank-tile--gone {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--rrot, 0deg)) scale(0.4);
+  pointer-events: none;
+}
+
+/* Revealed list — normal flow grid, overlap is impossible */
+.q-rank-list {
+  width: 100%;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.q-rank-list[data-cols="2"] { grid-template-columns: 1fr 1fr; }
+.q-rank-list-item {
+  display: grid; grid-template-columns: 42px 1fr;
+  align-items: center; gap: 10px;
+  padding: 10px 18px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: rotate(-1deg);
+}
+.q-rank-list-item:nth-child(even) { transform: rotate(0.6deg); }
+.q-rank-list[data-has-stats="true"] .q-rank-list-item {
+  grid-template-columns: 42px 1fr auto;
+}
+@keyframes rank-settle {
+  0%   { transform: scale(2.2) rotate(-2deg); opacity: 0; }
+  35%  { transform: scale(1.1) rotate(0.5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-1deg); }
+}
+@keyframes rank-settle-even {
+  0%   { transform: scale(2.2) rotate(2deg); opacity: 0; }
+  35%  { transform: scale(1.1) rotate(-0.5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0.6deg); }
+}
+.q-rank-list-item--new { animation: rank-settle 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.q-rank-list-item--new:nth-child(even) { animation-name: rank-settle-even; }
+.q-rank-num {
+  font-family: var(--display); font-size: 28px; font-weight: 400;
+  color: var(--red); text-align: left; line-height: 1;
+}
+.q-rank-name {
+  font-family: var(--display); font-size: 20px; font-weight: 400;
+  color: var(--ink); text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 1.05;
+}
+.q-rank-stat {
+  font-family: var(--mono); font-size: 14px; color: var(--text-off);
+  text-align: right; white-space: nowrap; letter-spacing: 0.04em;
+}
+/* Compact for 7+ items */
+.q-rank-list[data-many="true"] .q-rank-list-item { padding: 7px 14px; gap: 8px; }
+.q-rank-list[data-many="true"] .q-rank-num { font-size: 20px; }
+.q-rank-list[data-many="true"] .q-rank-name { font-size: 16px; }
+.q-rank-list[data-many="true"] .q-rank-stat { font-size: 12px; }
+.q-rank-list[data-many="true"] { gap: 4px; }
+
+/* Add scale-up exit animation to tile being revealed */
+@keyframes tile-reveal-exit {
+  0%   { transform: translate(-50%,-50%) rotate(var(--rrot,0deg)) scale(1); z-index: 20; }
+  60%  { transform: translate(-50%,-50%) rotate(0deg) scale(1.9); opacity: 1; z-index: 20; }
+  100% { transform: translate(-50%,-50%) rotate(0deg) scale(2.2); opacity: 0; z-index: 20; }
+}
+.q-rank-tile--exiting {
+  animation: tile-reveal-exit 0.45s ease forwards;
+  pointer-events: none;
+}
+
+
+/* ─────── CONTENT SLIDES ─────── */
+.content-slide-text { width: 100%; text-align: left; }
+.content-slide-text.center { text-align: center; }
+.content-heading {
+  font-family: var(--mono);
+  font-size: 43px; font-weight: 900;
+  line-height: 1.05; color: var(--text);
+  letter-spacing: -0.01em; margin-bottom: 17px;
+}
+.content-heading em { color: var(--accent); font-style: normal; }
+.content-body {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.55; color: var(--text-off);
+}
+.content-body em { color: var(--text); font-style: normal; font-weight: 600; }
+.content-body strong { color: var(--text); }
+.content-body p + p { margin-top: 1em; }
+.content-image-layout {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 29px;
+  width: 100%;
+}
+.content-image-wrap { display: flex; align-items: center; justify-content: center; }
+.content-image {
+  width: 100%; max-width: 100%;
+  max-height: 432px; object-fit: contain;
+  display: block;
+}
+.content-image-only {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+}
+.content-image-only img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; display: block;
+  image-rendering: auto;
+}
+/* Image-only slides: no padding, image fills the full frame */
+.slide[data-content-type="content_image"] .slide-frame {
+  padding: 0;
+}
+
+/* ─────── CLOSE / LEADERBOARD ─────── */
+.slide[data-type="scores"] .slide-frame,
+.slide[data-type="static"]#close-slide .slide-frame {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 80px;
+  gap: 0;
+}
+/* Inner column: constrained width so title + rows never span full frame */
+.close-inner {
+  width: 100%;
+  max-width: 640px;
+  display: flex; flex-direction: column;
+  align-items: center;
+}
+.close-title {
+  font-family: var(--display);
+  font-size: 56px; font-weight: 400;
+  line-height: 0.9; color: var(--ink); margin-bottom: 28px;
+  letter-spacing: -0.02em; text-transform: uppercase;
+  text-align: center; width: 100%;
+  word-break: break-word;
+}
+.close-title em { font-style: italic; color: var(--red); font-family: var(--serif); font-weight: 900; }
+.close-body {
+  font-family: var(--serif); font-style: italic;
+  font-size: 22px; color: var(--ink);
+  line-height: 1.4; text-align: center;
+}
+.close-body em { color: var(--red); font-style: italic; font-weight: 700; }
+.close-body strong { color: var(--ink); font-weight: 700; }
+.leaderboard {
+  width: 100%;
+}
+.lb-row {
+  display: flex; align-items: center; gap: 20px;
+  padding: 16px 24px; margin-bottom: 10px;
+  border: 3px solid var(--ink); background: #fff;
+  position: relative;
+}
+.lb-row:nth-child(odd) { transform: rotate(-0.4deg); }
+.lb-row:nth-child(even) { transform: rotate(0.4deg); }
+.lb-row.first {
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: rotate(-1.2deg); z-index: 2;
+}
+.lb-rank {
+  font-family: var(--display); font-size: 28px; font-weight: 400;
+  color: var(--ink); min-width: 32px; text-align: left;
+}
+.lb-row.first .lb-rank { color: var(--red); }
+.lb-name {
+  font-family: var(--display); font-size: 28px; font-weight: 400;
+  color: var(--ink); flex: 1; text-align: left; text-transform: uppercase;
+}
+.lb-score {
+  font-family: var(--display); font-size: 44px; font-weight: 400;
+  color: var(--ink); text-align: right; line-height: 0.9;
+}
+.lb-row.first .lb-score { color: var(--red); }
+.rule { width: 36px; height: 3px; background: var(--ink); margin: 22px auto; }
+.slide-accent-bar { display: none; }
+.click-prompt { display: none !important; }
+
+/* Scores slide — same paper backdrop, gets its own halftone wash */
+.slide[data-type="scores"],
+.slide[data-type="static"]#close-slide {
+  background: var(--paper);
+}
+.slide[data-type="scores"]::before,
+.slide[data-type="static"]#close-slide::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
+  background-size: 9px 9px;
+  opacity: 0.10; pointer-events: none;
+}
+
+/* ─────── PRESENTER MODE ─────── */
+/* Presenter UI is only active during play. During picker/setup, the user uses the regular UI
+   to choose an episode and enter contestants — even if an audience window is connected. */
+#presenter-frame {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  display: none; z-index: 80;
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 28vw, 360px);
+  grid-template-rows: 56px 1fr;
+  background: var(--bg);
+}
+#presenter-main { min-width: 0; }
+#presenter-side { min-width: 0; }
+body.presenter-mode.in-play #presenter-frame { display: grid; }
+
+
+/* When the presenter UI is fully active (in-play): hide the regular deck/nav/hint */
+body.presenter-mode.in-play #deck { display: none; }
+body.presenter-mode.in-play #nav { display: none !important; }
+body.presenter-mode.in-play #hint { display: none !important; }
+
+/* During picker/setup with an audience connected: leave the deck visible so the host can interact,
+   but show a small status banner indicating an audience is waiting. */
+#audience-status {
+  position: fixed; bottom: 22px; left: 70px;
+  display: none; align-items: center; gap: 8px;
+  padding: 7px 14px; background: var(--surface); border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--text);
+  z-index: 110;
+}
+body.presenter-mode:not(.in-play) #audience-status { display: inline-flex; }
+.audience-status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: aw-pulse 1.6s ease-in-out infinite;
+}
+
+#presenter-bar {
+  grid-column: 1 / -1; grid-row: 1;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 18px; border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+#presenter-bar > * { flex-shrink: 0; }
+.pbar-title {
+  font-family: var(--mono); font-size: 13px; font-weight: 800;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--text);
+  margin-right: auto;
+}
+.pbar-title em { color: var(--accent); font-style: normal; margin-left: 6px; }
+.pbar-progress {
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.2em; color: var(--text-off); text-transform: uppercase;
+  margin-right: 8px;
+}
+.pbar-btn {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 7px 14px; border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+}
+.pbar-btn:hover { border-color: var(--border-bold); background: var(--surface-hover); }
+.pbar-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pbar-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.pbar-btn.ghost { color: var(--text-muted); }
+.pbar-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+#presenter-main {
+  grid-column: 1; grid-row: 2;
+  display: flex; flex-direction: column;
+  padding: 18px; gap: 14px; overflow: hidden;
+}
+.preview-wrap {
+  flex: 1; display: flex; flex-direction: column; min-height: 0; gap: 6px;
+}
+.preview-label {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-muted);
+}
+.preview-current {
+  flex: 2; min-height: 0; border: 1px solid var(--border);
+  background: var(--bg); position: relative; overflow: hidden;
+}
+.preview-next {
+  flex: 1; min-height: 0; border: 1px solid var(--border);
+  background: var(--bg); position: relative; overflow: hidden;
+  opacity: 0.85;
+}
+/* Scaled mini-slide inside the preview — uses isolation so its CSS variables/media don't leak */
+.preview-slot { position: absolute; inset: 0; overflow: hidden; }
+.preview-slot .slide {
+  position: absolute !important; inset: auto !important;
+  top: 0 !important; left: 0 !important; right: auto !important; bottom: auto !important;
+  padding: 0 !important;
+  opacity: 1 !important; pointer-events: none;
+  transform-origin: top left;
+  background: var(--bg);
+}
+.preview-slot .slide * { transition: none !important; }
+.preview-slot .click-prompt { display: none !important; }
+
+#presenter-side {
+  grid-column: 2; grid-row: 2;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.pside-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.pside-section:last-child { border-bottom: none; flex: 1; overflow-y: auto; }
+.pside-h {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent);
+  font-weight: 800; margin-bottom: 10px;
+}
+.pside-host-notes {
+  font-family: var(--serif); font-size: 14px;
+  color: var(--text); line-height: 1.55; white-space: pre-wrap;
+}
+.pside-host-notes em { color: var(--accent); font-style: normal; }
+.pside-host-notes:empty::before {
+  content: '— no host notes —';
+  color: var(--text-muted); font-style: italic;
+}
+.pside-meta {
+  font-family: var(--serif); font-size: 13px;
+  color: var(--text-off); line-height: 1.5;
+}
+.pside-meta strong { color: var(--text); font-weight: 700; }
+
+/* Scoreboard inside presenter sidebar (re-uses .sb-* styles below) */
+
+/* ─────── SCOREBOARD STYLES (shared: presenter sidebar + scores slide) ─────── */
+.sb-row {
+  display: grid; grid-template-columns: 22px 1fr auto auto;
+  align-items: center; gap: 8px;
+  padding: 6px 10px; background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--border-bold);
+  margin-bottom: 4px;
+}
+.sb-row.leading { border-left-color: var(--accent); }
+.sb-name {
+  font-family: var(--mono); font-size: 14px;
+  font-weight: 600; letter-spacing: 0.05em; color: var(--text-off);
+  text-transform: uppercase; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sb-row.leading .sb-name { color: var(--accent); }
+.sb-pts {
+  font-family: var(--mono); font-size: 18px;
+  font-weight: 900; color: var(--text); min-width: 28px; text-align: right;
+}
+.sb-row.leading .sb-pts { color: var(--accent); }
+.sb-btn {
+  width: 22px; height: 22px; border: 1px solid var(--border); background: var(--bg);
+  color: var(--text-muted); font-size: 16px; line-height: 1; cursor: pointer;
+  border-radius: 2px; padding: 0; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+}
+.sb-btn:hover { color: var(--text); border-color: var(--border-bold); background: var(--surface-hover); }
+.sb-btn.minus { font-size: 18px; }
+.sb-plus { color: var(--accent); }
+.sb-plus:hover { background: var(--accent-tint); border-color: var(--accent); color: var(--accent); }
+
+/* ─────── AUDIENCE MODE ─────── */
+/* Slides fill viewport by default (inset: 0). Strip every UI affordance. */
+body.audience-mode #nav { display: none !important; }
+body.audience-mode #hint { display: none !important; }
+body.audience-mode #studio { display: none !important; }
+body.audience-mode .click-prompt { display: none !important; }
+/* On audience side, hide the setup slide entirely — show a graceful waiting screen instead */
+body.audience-mode .slide[data-type="setup"] { opacity: 0 !important; pointer-events: none; }
+body.audience-mode .slide[data-type="picker"] { opacity: 0 !important; pointer-events: none; }
+#audience-waiting {
+  position: fixed; inset: 0;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: var(--bg); color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 16px; letter-spacing: 0.3em; text-transform: uppercase;
+  z-index: 60; gap: 14px;
+}
+body.audience-mode.audience-waiting #audience-waiting { display: flex; }
+.audience-waiting-mark {
+  font-family: var(--mono); font-size: clamp(64px, 12vw, 120px);
+  font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 0.9;
+}
+.audience-waiting-mark span { color: var(--accent); }
+.audience-waiting-pulse {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); margin-right: 8px;
+  animation: aw-pulse 1.6s ease-in-out infinite;
+}
+@keyframes aw-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* ─────── STUDIO ─────── */
+#studio {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg); color: var(--text);
+  display: none; flex-direction: column;
+  font-family: var(--serif); user-select: text;
+  overflow: hidden;
+}
+#studio.visible { display: flex; }
+.studio-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; background: var(--surface);
+}
+.studio-title {
+  font-family: var(--mono);
+  font-size: 14px; font-weight: 800; letter-spacing: 0.4em;
+  color: var(--text); text-transform: uppercase;
+}
+.studio-title em { color: var(--accent); font-style: normal; margin-left: 8px; }
+.studio-actions { display: flex; gap: 10px; align-items: center; }
+.studio-body { flex: 1; overflow-y: auto; padding: 24px; }
+.studio-content { max-width: 1100px; margin: 0 auto; }
+
+.studio-list-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.studio-ep {
+  border: 1px solid var(--border); background: var(--surface);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;
+}
+.studio-ep-title {
+  font-family: var(--mono);
+  font-size: 22px; font-weight: 800; color: var(--text);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.studio-ep-meta {
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase;
+}
+.studio-ep-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+.editor-header {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.editor-name-input {
+  background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 28px; font-weight: 800;
+  padding: 10px 14px; outline: none; min-width: 280px; flex: 1;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.editor-name-input:focus { border-color: var(--accent); }
+.editor-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab-btn {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  padding: 12px 20px; background: transparent; border: none;
+  color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text-off); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.field-grid { display: grid; grid-template-columns: 1fr; gap: 18px; max-width: 720px; }
+.field-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase;
+}
+.field input, .field textarea, .field select {
+  background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--serif); font-size: 15px;
+  padding: 10px 12px; outline: none; transition: border-color 0.15s;
+}
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+.field textarea { min-height: 70px; resize: vertical; }
+.field-hint { font-size: 12px; color: var(--text-muted); }
+.field-row { display: flex; align-items: center; gap: 10px; }
+.field-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+.field-row label {
+  font-family: var(--serif); font-size: 14px; color: var(--text);
+  letter-spacing: normal; text-transform: none; margin: 0;
+}
+.section-h {
+  font-family: var(--mono); font-size: 13px; font-weight: 800;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent);
+  margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.section-h:first-child { margin-top: 0; }
+
+.q-tab-layout {
+  display: grid; grid-template-columns: 320px 1fr;
+  gap: 20px; align-items: start;
+}
+.q-list-wrap {
+  border: 1px solid var(--border); background: var(--surface); padding: 12px;
+  position: sticky; top: 0;
+}
+.q-list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.q-list-header h4 {
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-off);
+}
+.q-list { display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 240px); overflow-y: auto; }
+.q-list-item {
+  padding: 10px 12px; border: 1px solid var(--border); background: var(--surface-2);
+  cursor: pointer; transition: all 0.12s;
+  display: flex; align-items: center; gap: 8px;
+}
+.q-list-item:hover { border-color: var(--border-bold); }
+.q-list-item.active { border-color: var(--accent); background: var(--accent-soft); }
+.q-list-item.dragging { opacity: 0.4; }
+.q-list-item.drag-over { border-top: 2px solid var(--accent); }
+.q-grip {
+  color: var(--text-muted); cursor: grab; font-size: 14px; line-height: 1; user-select: none;
+}
+.q-list-num {
+  font-family: var(--mono); font-size: 11px;
+  font-weight: 700; color: var(--text-muted); letter-spacing: 0.1em;
+  min-width: 22px;
+}
+.q-list-text {
+  flex: 1; font-size: 13px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.q-list-type {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.2em; color: var(--accent);
+  text-transform: uppercase; padding: 2px 6px;
+  border: 1px solid var(--accent);
+}
+.q-list-add { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.q-list-add .btn-sm { flex: 1; min-width: auto; }
+.q-list-add-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.q-list-add-label {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 6px; font-weight: 700;
+}
+.q-list-item.is-content { background: var(--surface-2); }
+.q-list-item.is-content .q-list-type { color: var(--text-muted); border-color: var(--border); }
+
+.q-editor {
+  border: 1px solid var(--border); background: var(--surface); padding: 24px;
+}
+.q-editor-empty {
+  text-align: center; padding: 60px 20px; color: var(--text-muted);
+  font-style: italic;
+}
+.q-editor-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; gap: 10px;
+}
+.q-type-pill {
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent);
+  padding: 6px 12px; border: 1px solid var(--accent);
+}
+.option-row {
+  display: grid; grid-template-columns: 1fr 100px auto;
+  gap: 8px; align-items: center; margin-bottom: 8px;
+}
+.option-row input { width: 100%; }
+.btn-x {
+  background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+  width: 32px; height: 32px; cursor: pointer; padding: 0;
+  font-size: 16px; line-height: 1;
+}
+.btn-x:hover { color: var(--text); border-color: var(--border-bold); }
+.btn-add {
+  background: transparent; border: 1px dashed var(--border); color: var(--text-off);
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 8px 14px; cursor: pointer; margin-top: 4px;
+}
+.btn-add:hover { color: var(--text); border-color: var(--border-bold); }
+
+.logo-upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logo-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; max-width: 480px; }
+.logo-preview {
+  display: flex; align-items: center; justify-content: center;
+  height: 100px; padding: 12px; border: 1px solid var(--border);
+  position: relative;
+}
+.logo-preview.is-light { background: #fafaf7; }
+.logo-preview.is-dark { background: #1a1a1a; }
+.logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-preview-label {
+  position: absolute; top: 6px; left: 8px;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.25em; text-transform: uppercase;
+}
+.logo-preview.is-light .logo-preview-label { color: #888; }
+.logo-preview.is-dark .logo-preview-label { color: #888; }
+
+/* Studio: contestant editor */
+.contestant-edit-list {
+  display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px;
+}
+.ct-card {
+  display: grid; grid-template-columns: 160px 1fr;
+  gap: 20px; padding: 18px; border: 1px solid var(--border); background: var(--surface);
+}
+.ct-photo-col { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.ct-photo {
+  width: 140px; height: 140px;
+  object-fit: cover; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  display: block;
+}
+.ct-photo-empty {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-subtle);
+}
+.ct-photo-empty svg { width: 50%; height: 50%; }
+.ct-photo-actions { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.ct-photo-actions .btn { width: 100%; padding: 6px 8px; font-size: 11px; }
+.ct-fields { display: flex; flex-direction: column; }
+.ct-row-actions { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+
+/* ─────── PROMO IMAGE TEMPLATES (rendered offscreen for export) ─────── */
+/* These render at fixed pixel dimensions. The host element gets `position: fixed; left: -9999px;`
+   so users never see them; html2canvas captures them at full size, then they're removed. */
+.promo {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+  font-family: var(--serif);
+  color: var(--ink);
+  /* Halftone backdrop matches the show */
+}
+.promo::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--ink) 1.4px, transparent 1.6px);
+  background-size: 12px 12px;
+  opacity: 0.14; pointer-events: none;
+  z-index: 1;
+}
+.promo::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--red) 1.4px, transparent 1.6px);
+  background-size: 18px 18px;
+  opacity: 0.22; pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: multiply;
+}
+.promo-spark {
+  position: absolute;
+  font-family: var(--display);
+  color: var(--red);
+  pointer-events: none;
+  z-index: 3;
+}
+.promo-tape {
+  position: absolute;
+  background: rgba(245,233,74,0.85);
+  border: 0.5px solid rgba(0,0,0,0.20);
+  pointer-events: none;
+  z-index: 5;
+}
+.promo-band {
+  position: absolute;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 4;
+  /* Torn-paper top edge to match the title slide */
+  clip-path: polygon(
+    0 22%, 3% 12%, 7% 26%, 12% 14%, 17% 28%, 22% 10%, 27% 24%,
+    32% 14%, 38% 27%, 43% 12%, 48% 25%, 53% 16%, 58% 28%, 63% 14%,
+    68% 26%, 73% 12%, 78% 27%, 83% 16%, 88% 26%, 93% 14%, 100% 22%,
+    100% 100%, 0 100%
+  );
+}
+.promo-band-text {
+  font-family: var(--mono);
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--yellow);
+  margin-top: 12px;
+}
+.promo-wordmark {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.85; color: var(--ink);
+  position: relative; z-index: 4;
+  text-align: center;
+}
+.promo-wordmark .splat {
+  display: inline-block;
+  background: var(--red);
+  color: var(--yellow);
+  padding: 0 0.08em;
+  transform: rotate(-3deg) skewX(-4deg);
+  margin: 0 -0.04em;
+}
+.promo-episode-title {
+  font-family: var(--serif); font-style: italic; font-weight: 900;
+  color: var(--ink);
+  text-align: center;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  position: relative; z-index: 4;
+}
+.promo-contestants {
+  display: flex; align-items: flex-end; justify-content: center;
+  position: relative; z-index: 4;
+}
+.promo-contestant {
+  display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+.promo-contestant-photo-wrap { position: relative; }
+.promo-contestant-photo {
+  object-fit: cover;
+  border: 4px solid var(--ink);
+  background: var(--paper-2);
+  display: block;
+  position: relative;
+  border-radius: 50%;
+}
+.promo-contestant-photo-empty {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper-2);
+  color: var(--text-subtle);
+  border-radius: 50%;
+  border: 4px solid var(--ink);
+}
+.promo-contestant-photo-empty svg { width: 50%; height: 50%; }
+.promo-contestant-name {
+  font-family: var(--display); font-weight: 400;
+  color: var(--ink); text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 0.9;
+  text-align: center;
+}
+.promo-vs {
+  font-family: var(--display); font-weight: 400;
+  color: var(--red); transform: rotate(-6deg);
+}
+
+/* === SQUARE 1080×1080 === */
+.promo.square {
+  width: 1080px; height: 1080px;
+  padding: 100px 80px;
+  display: flex; flex-direction: column;
+}
+.promo.square .promo-spark.tl { top: 38px; left: 60px; font-size: 96px; transform: rotate(-12deg); }
+.promo.square .promo-spark.br { bottom: 100px; right: 60px; font-size: 80px; transform: rotate(8deg); color: var(--ink); }
+.promo.square .promo-tape.tr { top: -16px; right: 110px; width: 130px; height: 32px; transform: rotate(8deg); background: rgba(255,255,255,0.6); }
+.promo.square .promo-tape.bl { bottom: 200px; left: -20px; width: 140px; height: 36px; transform: rotate(-12deg); background: rgba(224,45,42,0.55); }
+.promo.square .promo-band {
+  bottom: 0; left: -20px; right: -20px;
+  height: 80px;
+}
+.promo.square .promo-band-text { font-size: 18px; }
+.promo.square .promo-wordmark { font-size: 188px; margin-top: 30px; }
+.promo.square .promo-episode-title { font-size: 56px; margin-top: 36px; max-width: 800px; align-self: center; }
+.promo.square .promo-contestants { gap: 56px; margin-top: auto; padding-bottom: 30px; }
+.promo.square .promo-contestant-photo,
+.promo.square .promo-contestant-photo-empty { width: 200px; height: 200px; }
+.promo.square .promo-contestant-name { font-size: 38px; margin-top: 16px; max-width: 220px; }
+.promo.square .promo-vs { font-size: 56px; margin-bottom: 100px; }
+
+/* === STORY 1080×1920 === */
+.promo.story {
+  width: 1080px; height: 1920px;
+  padding: 140px 90px;
+  display: flex; flex-direction: column;
+}
+.promo.story .promo-spark.tl { top: 56px; left: 70px; font-size: 110px; transform: rotate(-12deg); }
+.promo.story .promo-spark.br { bottom: 200px; right: 80px; font-size: 96px; transform: rotate(8deg); color: var(--ink); }
+.promo.story .promo-tape.tr { top: -20px; right: 130px; width: 160px; height: 38px; transform: rotate(8deg); background: rgba(255,255,255,0.6); }
+.promo.story .promo-tape.bl { top: 50%; left: -30px; width: 170px; height: 42px; transform: rotate(-12deg); background: rgba(224,45,42,0.55); }
+.promo.story .promo-band {
+  bottom: 0; left: -20px; right: -20px;
+  height: 100px;
+}
+.promo.story .promo-band-text { font-size: 22px; }
+.promo.story .promo-wordmark { font-size: 200px; margin-top: 40px; }
+.promo.story .promo-episode-title { font-size: 64px; margin-top: 60px; max-width: 880px; align-self: center; }
+.promo.story .promo-contestants { gap: 80px; margin-top: auto; padding-bottom: 50px; flex-direction: row; }
+.promo.story .promo-contestant-photo,
+.promo.story .promo-contestant-photo-empty { width: 280px; height: 280px; }
+.promo.story .promo-contestant-name { font-size: 48px; margin-top: 22px; max-width: 320px; }
+.promo.story .promo-vs { font-size: 70px; margin-bottom: 150px; }
+
+/* === WIDE 1920×1080 === */
+.promo.wide {
+  width: 1920px; height: 1080px;
+  padding: 80px 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 80px;
+  row-gap: 30px;
+  align-items: center;
+}
+.promo.wide .promo-spark.tl { top: 36px; left: 70px; font-size: 110px; transform: rotate(-12deg); }
+.promo.wide .promo-spark.br { bottom: 100px; right: 80px; font-size: 96px; transform: rotate(8deg); color: var(--ink); }
+.promo.wide .promo-tape.tr { top: -16px; right: 220px; width: 160px; height: 36px; transform: rotate(8deg); background: rgba(255,255,255,0.6); }
+.promo.wide .promo-tape.bl { bottom: 140px; left: -30px; width: 160px; height: 40px; transform: rotate(-12deg); background: rgba(224,45,42,0.55); }
+.promo.wide .promo-band {
+  bottom: 0; left: -20px; right: -20px;
+  height: 80px;
+}
+.promo.wide .promo-band-text { font-size: 18px; }
+.promo.wide .promo-wordmark {
+  grid-column: 1; grid-row: 1 / span 2;
+  font-size: 220px; text-align: left; align-self: center; margin-top: -50px;
+}
+.promo.wide .promo-episode-title {
+  grid-column: 1; grid-row: 2;
+  font-size: 50px; text-align: left; max-width: 760px; align-self: end;
+  margin-top: -30px;
+}
+.promo.wide .promo-contestants {
+  grid-column: 2; grid-row: 1 / span 2;
+  flex-direction: column; gap: 60px; align-items: center; align-self: center; padding-bottom: 80px;
+}
+.promo.wide .promo-contestant {
+  flex-direction: row; gap: 40px; align-items: center;
+}
+.promo.wide .promo-contestant-photo,
+.promo.wide .promo-contestant-photo-empty { width: 220px; height: 220px; }
+.promo.wide .promo-contestant-name { font-size: 64px; margin-top: 0; max-width: none; text-align: left; }
+.promo.wide .promo-vs { font-size: 60px; transform: rotate(-6deg); margin: 0; }
+
+/* Promo button + status */
+.promo-section { margin-top: 18px; }
+.promo-btn {
+  background: var(--ink); color: var(--yellow);
+  font-family: var(--display); font-size: 14px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 14px 22px; border: 3px solid var(--ink); cursor: pointer;
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+.promo-btn:hover { transform: rotate(-1deg) translate(-2px, -2px); box-shadow: 4px 4px 0 var(--red); }
+.promo-btn[disabled] { opacity: 0.6; cursor: wait; }
+.promo-status {
+  margin-top: 8px; font-family: var(--mono); font-size: 12px;
+  color: var(--text-muted); letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+  #nav { left: 0; max-width: 100%; }
+  #hint { right: 16px; font-size: 10px; bottom: 22px; }
+  .sb-name { font-size: 12px; }
+  .sb-pts { font-size: 14px; }
+  .picker-inner, .setup-inner { max-width: 100%; }
+  .q-tab-layout { grid-template-columns: 1fr; }
+  .ct-card { grid-template-columns: 1fr; }
+  .q-list-wrap { position: relative; }
+  .field-grid.cols-2 { grid-template-columns: 1fr; }
+  body.presenter-mode.in-play #presenter-frame {
+    left: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px auto 1fr;
+  }
+  body.presenter-mode.in-play #presenter-main { grid-column: 1; grid-row: 2; }
+  body.presenter-mode.in-play #presenter-side { grid-column: 1; grid-row: 3; border-left: none; border-top: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<!-- ─────── Password gate ─────── -->
+<style>
+#gate {
+  position: fixed; inset: 0; z-index: 99999;
+  background: #fffceb; color: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', Georgia, serif;
+}
+#gate.hidden { display: none; }
+#gate form {
+  display: flex; flex-direction: column; gap: 14px;
+  width: 280px; text-align: center;
+}
+#gate input {
+  padding: 10px 12px; font-size: 16px;
+  border: 1px solid rgba(26,26,26,0.4);
+  background: #fffceb; color: #1a1a1a;
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+#gate button {
+  padding: 10px 12px; font-size: 15px; cursor: pointer;
+  border: 1px solid #1a1a1a; background: #f5e94a; color: #1a1a1a;
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+#gate button:hover { background: #e02d2a; color: #fffceb; }
+#gate .gate-title { font-family: 'Bungee', sans-serif; font-size: 20px; margin-bottom: 4px; }
+#gate .gate-error { color: #e02d2a; font-size: 13px; min-height: 16px; font-family: 'DM Mono', ui-monospace, monospace; }
+body.gate-locked > *:not(#gate) { display: none !important; }
+</style>
+<div id="gate">
+  <form id="gate-form">
+    <div class="gate-title">NON&#8209;CENSUS</div>
+    <input type="password" id="gate-input" placeholder="Password" autocomplete="off" autofocus>
+    <button type="submit">Enter</button>
+    <div class="gate-error" id="gate-error"></div>
+  </form>
+</div>
+<script>
+(function () {
+  var CORRECT_HASH = "5fd395fbfd117329bba857010fbf1cac00b3fc9c692bb59361eb0aa60de9ccaa";
+  var SESSION_KEY = "nc_gate_ok";
+
+  async function sha256(str) {
+    var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  function unlock() {
+    document.body.classList.remove("gate-locked");
+    document.getElementById("gate").classList.add("hidden");
+  }
+
+  if (sessionStorage.getItem(SESSION_KEY) === "1") {
+    unlock();
+  } else {
+    document.body.classList.add("gate-locked");
+  }
+
+  document.getElementById("gate-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var val = document.getElementById("gate-input").value;
+    var hash = await sha256(val);
+    if (hash === CORRECT_HASH) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      unlock();
+    } else {
+      document.getElementById("gate-error").textContent = "Incorrect password.";
+      document.getElementById("gate-input").value = "";
+    }
+  });
+})();
+</script>
+
+<!-- Audience waiting placeholder (shown only on audience window when no state has arrived yet) -->
+<div id="audience-waiting">
+  <div class="audience-waiting-mark">NON<span>-</span><br>CENSUS</div>
+  <div><span class="audience-waiting-pulse"></span>Waiting for presenter…</div>
+</div>
+
+<!-- Camera zone -->
+<div id="deck"></div>
+<div id="nav"></div>
+<div id="hint"></div>
+
+<!-- Studio overlay -->
+<div id="studio">
+  <div class="studio-header">
+    <div class="studio-title">Non-Census <em>Studio</em></div>
+    <div class="studio-actions" id="studio-actions"></div>
+  </div>
+  <div class="studio-body">
+    <div class="studio-content" id="studio-content"></div>
+  </div>
+</div>
+
+<!-- Status banner shown during picker/setup when an audience window is connected -->
+<div id="audience-status">
+  <span class="audience-status-dot"></span>
+  Audience window connected — waiting for game to start
+</div>
+
+<!-- Presenter Mode UI (shown only when in presenter mode, replaces deck) -->
+<div id="presenter-frame">
+  <div id="presenter-bar">
+    <div class="pbar-title">Non-Census <em>Presenter</em></div>
+    <div class="pbar-progress" id="pbar-progress"></div>
+    <button class="pbar-btn" id="pbar-prev">← Prev</button>
+    <button class="pbar-btn primary" id="pbar-advance">Reveal</button>
+    <button class="pbar-btn" id="pbar-next">Next →</button>
+    <button class="pbar-btn" id="pbar-scores">Show Scores</button>
+    <button class="pbar-btn ghost" id="pbar-end">End Presenter</button>
+  </div>
+  <div id="presenter-main">
+    <div class="preview-wrap">
+      <div class="preview-label">Audience now sees</div>
+      <div class="preview-current" id="preview-current">
+        <div class="preview-slot" id="preview-slot-current"></div>
+      </div>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-label">Up next</div>
+      <div class="preview-next" id="preview-next">
+        <div class="preview-slot" id="preview-slot-next"></div>
+      </div>
+    </div>
+  </div>
+  <div id="presenter-side">
+    <div class="pside-section">
+      <div class="pside-h">Contestants</div>
+      <div id="pside-scoreboard"></div>
+    </div>
+    <div class="pside-section">
+      <div class="pside-h">Slide Info</div>
+      <div class="pside-meta" id="pside-meta"></div>
+    </div>
+    <div class="pside-section">
+      <div class="pside-h">Host Notes</div>
+      <div class="pside-host-notes" id="pside-notes"></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept="application/json" style="display:none">
+
+<script>
+// ╔════════════════════════════════════════════════╗
+// ║ DEMO EPISODE                                   ║
+// ╚════════════════════════════════════════════════╝
+const DEMO_EPISODE = {
+  id: 'demo',
+  name: 'Demo Episode',
+  isDemo: true,
+  framing: {
+    title: 'NON-CENSUS',
+    logoUrl: null,
+    tagline: 'Digging into the data nobody else bothered to.',
+    closeTitle: 'One honest<br><em>mirror.</em>',
+    closeBody: "Every answer comes from real polling data. Every question lands somewhere people didn't expect. That's the show."
+  },
+  contestants: [
+    { id: 'c1', name: 'Marco', subtext: 'Self-proclaimed pollster. Wrong about almost everything.', photoUrl: null },
+    { id: 'c2', name: 'Aisha', subtext: 'Reads three newspapers a day. Will hear none of it.', photoUrl: null }
+  ],
+  questions: [
+    { id: 'q1', type: 'two_choice', text: 'People who say they have…', options: [{ text: 'At least one close friend', pct: 79 }, { text: 'No close friends', pct: 21 }], correct: 0 },
+    { id: 'q2', type: 'over_under', text: "What percentage of people say they don't get enough sleep?", number: 40, correct: 'over', actual: 42, note: 'It\'s <strong>~42%</strong> — nearly half running on empty.' },
+    { id: 'q3', type: 'two_choice', text: 'People who…', options: [{ text: "Don't exercise regularly", pct: 53 }, { text: 'Exercise regularly', pct: 47 }], correct: 0 },
+    { id: 'q4', type: 'two_choice', text: 'People who think social media is…', options: [{ text: 'Harmful to society', pct: 64 }, { text: 'Good for society', pct: 36 }], correct: 0 },
+    { id: 'q5', type: 'two_choice', text: 'What determines success?', options: [{ text: 'Hard work', pct: 70 }, { text: 'Luck', pct: 30 }], correct: 0 },
+    { id: 'q6', type: 'over_under', text: 'People who say they feel stressed about money', number: 60, correct: 'over', actual: 64, note: "It's <strong>~64%</strong> — nearly two in three." },
+    { id: 'q7', type: 'two_choice', text: 'What changes things more?', options: [{ text: 'Individual effort', pct: 61 }, { text: 'Changing the system', pct: 39 }], correct: 0 },
+    { id: 'q8', type: 'two_choice', text: 'People who feel…', options: [{ text: 'Misunderstood', pct: 52 }, { text: 'Understood', pct: 48 }], correct: 0 }
+  ]
+};
+
+const BLANK_FRAMING = () => ({
+  title: 'NON-CENSUS',
+  logoUrl: null,
+  tagline: 'Digging into the data nobody else bothered to.',
+  closeTitle: 'Final Results.', closeBody: ''
+});
+
+const BLANK_CONTESTANTS = () => ([
+  { id: 'c_' + Math.random().toString(36).slice(2, 7), name: '', subtext: '', photoUrl: null },
+  { id: 'c_' + Math.random().toString(36).slice(2, 7), name: '', subtext: '', photoUrl: null }
+]);
+
+// ╔════════════════════════════════════════════════╗
+// ║ STORAGE                                        ║
+// ╚════════════════════════════════════════════════╝
+const STORAGE_KEY = 'nonCensus.episodes.v1';
+
+function loadEpisodes() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function saveEpisodes(eps) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(eps)); } catch (e) { alert('Failed to save: ' + e.message); }
+}
+function getEpisode(id) {
+  if (id === 'demo') return DEMO_EPISODE;
+  return loadEpisodes().find(e => e.id === id);
+}
+function upsertEpisode(ep) {
+  const eps = loadEpisodes();
+  const idx = eps.findIndex(e => e.id === ep.id);
+  if (idx >= 0) eps[idx] = ep; else eps.push(ep);
+  saveEpisodes(eps);
+}
+function deleteEpisode(id) {
+  saveEpisodes(loadEpisodes().filter(e => e.id !== id));
+}
+function newEpisodeId() { return 'ep_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6); }
+
+// Migrate any older episodes that still have a `rounds` array or `round` fields on questions
+function migrateEpisode(ep) {
+  if (!ep) return ep;
+  if (ep.rounds) delete ep.rounds;
+  if (ep.framing && 'showRoundMap' in ep.framing) delete ep.framing.showRoundMap;
+  if (ep.framing && 'titleSplit' in ep.framing) delete ep.framing.titleSplit;
+  if (ep.framing && 'showFormats' in ep.framing) delete ep.framing.showFormats;
+  // Strip removed concept-slide fields
+  if (ep.framing && 'concept' in ep.framing) delete ep.framing.concept;
+  if (ep.framing && 'conceptBody' in ep.framing) delete ep.framing.conceptBody;
+  if (Array.isArray(ep.questions)) ep.questions.forEach(q => {
+    if ('round' in q) delete q.round;
+    if ('label' in q) delete q.label;
+  });
+  // Ensure contestants array exists; preserve any existing data
+  if (!Array.isArray(ep.contestants)) ep.contestants = [];
+  // Each contestant needs an id, name, subtext, photoUrl
+  ep.contestants = ep.contestants.map(c => ({
+    id: c.id || ('c_' + Math.random().toString(36).slice(2, 7)),
+    name: c.name || '',
+    subtext: c.subtext || '',
+    photoUrl: c.photoUrl || null,
+  }));
+  return ep;
+}
+
+// ╔════════════════════════════════════════════════╗
+// ║ GAME STATE + ROLES                             ║
+// ╚════════════════════════════════════════════════╝
+// Role detection: this window is one of three things
+//   'audience'  → opened via window.open() with #audience hash; receives state, displays slides only
+//   'presenter' → original window when audience window is connected
+//   'solo'      → original window with no audience window connected (default)
+const isAudienceWindow = window.location.hash.startsWith('#audience');
+let role = isAudienceWindow ? 'audience' : 'solo';
+let audienceGotState = false;
+
+// State that drives what's on screen. Single source of truth.
+let currentEpisode = null;
+let state = {
+  // 'picker' (no episode loaded), 'setup' (episode loaded, names entry), 'play' (in deck)
+  phase: 'picker',
+  episodeId: null,        // which episode is loaded (used by audience to load same episode)
+  contestants: [],        // [{ name, score }]
+  scoring: false,         // whether scoring is on
+  current: 0,             // current slide index (within play deck — 0 is title)
+  revealed: {},           // { [slideKey]: true } — slides that have been revealed
+  showScoresInjected: false, // whether the synthetic Scores slide is currently in the deck
+  showScoresAfter: -1,    // index after which the scores slide was inserted (for cleanup)
+};
+
+let slides = [];          // play-mode slide elements
+
+const deckEl = document.getElementById('deck');
+const navEl = document.getElementById('nav');
+const hintEl = document.getElementById('hint');
+
+// Audience-window flag on body
+if (isAudienceWindow) {
+  document.body.classList.add('audience-mode');
+}
+
+// ╔════════════════════════════════════════════════╗
+// ║ HELPERS                                        ║
+// ╚════════════════════════════════════════════════╝
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function safeRich(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/&lt;(\/?(?:em|strong|br))(?:\s*\/)?&gt;/gi, '<$1>');
+}
+
+// Scale an element's font-size down until its single-line content fits its container width.
+// Uses binary search between min and max px values. Idempotent — safe to call repeatedly.
+// Element must be display: block (or inline-block) and use white-space: nowrap.
+function fitTextToWidth(el, opts = {}) {
+  if (!el) return;
+  const min = opts.min || 16;
+  const max = opts.max || 200;
+  const tolerance = opts.tolerance || 1.5;
+  const parent = el.parentElement;
+  if (!parent) return;
+  // Reset to max to measure
+  el.style.whiteSpace = 'nowrap';
+  el.style.fontSize = max + 'px';
+  // If it already fits at max, done
+  const targetW = parent.clientWidth;
+  if (!targetW) return;
+  if (el.scrollWidth <= targetW) {
+    el.style.fontSize = max + 'px';
+    return;
+  }
+  // Binary search
+  let lo = min, hi = max;
+  let lastFit = min;
+  for (let i = 0; i < 18; i++) {
+    const mid = (lo + hi) / 2;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollWidth <= targetW) {
+      lastFit = mid;
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+    if (hi - lo < tolerance) break;
+  }
+  el.style.fontSize = lastFit + 'px';
+}
+
+// Fit contestant names so no single word overflows the column width.
+// Uses a hidden measurement span to find the longest word, then binary-searches
+// for the largest font size where that word fits without a mid-character break.
+function fitContestantNames() {
+  // Reusable measurement span
+  const probe = document.createElement('span');
+  probe.style.cssText = 'visibility:hidden;white-space:nowrap;position:absolute;top:-9999px;left:-9999px;font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:-0.02em';
+  document.body.appendChild(probe);
+
+  document.querySelectorAll('.contestant-name').forEach(el => {
+    el.style.fontSize = '';
+    const parent = el.parentElement;
+    if (!parent) return;
+    const colWidth = parent.clientWidth;
+    if (!colWidth) return;
+
+    // Find the longest word in the name
+    const words = (el.textContent || '').trim().split(/\s+/);
+    const longestWord = words.reduce((a, b) => a.length > b.length ? a : b, '');
+    if (!longestWord) return;
+
+    probe.textContent = longestWord;
+
+    // Start at CSS default (72px). If it fits, leave it alone.
+    probe.style.fontSize = '72px';
+    if (probe.scrollWidth <= colWidth) return;
+
+    // Binary search down to the largest size where the longest word fits
+    let lo = 24, hi = 72, lastFit = 24;
+    for (let i = 0; i < 16; i++) {
+      const mid = (lo + hi) / 2;
+      probe.style.fontSize = mid + 'px';
+      if (probe.scrollWidth <= colWidth) { lastFit = mid; lo = mid; }
+      else { hi = mid; }
+      if (hi - lo < 1) break;
+    }
+    el.style.fontSize = lastFit + 'px';
+  });
+
+  document.body.removeChild(probe);
+}
+
+// Shrink question text on a single slide if its rendered height would crowd out the answers.
+// Reads computed line-height to decide what counts as "too tall" — generally allows the
+// question to occupy at most ~55% of the slide's content area.
+function fitQuestionText(slide) {
+  if (!slide) return;
+  const el = slide.querySelector('.q-text, .q-text-sm');
+  if (!el) return;
+  const slideRect = slide.getBoundingClientRect();
+  if (!slideRect.height) return;
+  // Reserve at least 35% of the slide for options/answer space.
+  const maxAllowed = slideRect.height * 0.55;
+  // Read the current CSS-computed font size as our starting upper bound.
+  const computed = parseFloat(getComputedStyle(el).fontSize) || 32;
+  el.style.fontSize = computed + 'px';
+  // If it fits, leave alone.
+  if (el.scrollHeight <= maxAllowed) return;
+  // Binary search downwards to a fitting size.
+  let lo = 14, hi = computed;
+  let lastFit = lo;
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollHeight <= maxAllowed) {
+      lastFit = mid;
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+    if (hi - lo < 1.5) break;
+  }
+  el.style.fontSize = lastFit + 'px';
+}
+
+function fitAllQuestionText() {
+  document.querySelectorAll('.q-slide').forEach(fitQuestionText);
+}
+
+// Reset inline font-size on a slide's question text and re-fit. Used after reveal-state
+// changes so the CSS's new clamp() applies before the JS measures. Temporarily disables
+// the CSS transition so getComputedStyle gives us the target value, not a mid-transition one.
+function refitSlideQuestionText(slide) {
+  if (!slide) return;
+  const el = slide.querySelector('.q-text, .q-text-sm');
+  if (!el) return;
+  // Save the current transition, suppress it, clear inline font-size, fit, restore transition
+  const originalTransition = el.style.transition;
+  el.style.transition = 'none';
+  el.style.fontSize = '';
+  // Defer one frame so the class change + transition suppression apply before measuring
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    fitQuestionText(slide);
+    // Restore transition on the next frame so subsequent state changes still animate
+    requestAnimationFrame(() => { el.style.transition = originalTransition; });
+  }));
+}
+
+// Downscale an image File to a square data: URL of the given size (default 800px) and JPEG quality.
+// Crops center-square, resizes with the canvas, and returns a JPEG data URL. Always returns
+// a much smaller payload than the original — typically <100 KB for a headshot.
+function downscaleImageToSquareJpeg(file, size = 800, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file.type || !file.type.startsWith('image/')) {
+      return reject(new Error('Not an image file.'));
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not decode image.'));
+      img.onload = () => {
+        try {
+          // Center-crop to a square first
+          const srcSize = Math.min(img.naturalWidth, img.naturalHeight);
+          const sx = (img.naturalWidth - srcSize) / 2;
+          const sy = (img.naturalHeight - srcSize) / 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, sx, sy, srcSize, srcSize, 0, 0, size, size);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ╔════════════════════════════════════════════════╗
+// ║ SLIDE BUILDERS                                 ║
+// ╚════════════════════════════════════════════════╝
+function buildPickerSlide() {
+  const eps = loadEpisodes().map(migrateEpisode);
+  const all = [DEMO_EPISODE, ...eps];
+  const cards = all.map(ep => {
+    const cls = ep.isDemo ? 'episode-card demo' : 'episode-card';
+    const meta = `${ep.questions.length} question${ep.questions.length === 1 ? '' : 's'}`;
+    return `<div class="${cls}" data-ep="${escHtml(ep.id)}">
+      <div class="ep-name">${escHtml(ep.name)}</div>
+      <div class="ep-meta">${meta}${ep.isDemo ? ' · demo' : ''}</div>
+    </div>`;
+  }).join('');
+  return `<div class="slide" data-type="picker">
+    <div class="picker-inner">
+      <div class="picker-logo">Non-Census</div>
+      <p class="picker-title">Pick an episode</p>
+      <p class="picker-sub">Choose a saved episode, or open the studio to build a new one.</p>
+      <div class="episode-grid">${cards}</div>
+      <div class="picker-actions">
+        <button class="btn" data-act="studio">Studio</button>
+        <button class="btn" data-act="presenter">Open Audience Window</button>
+        <button class="btn" data-act="import">Import JSON</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildSetupSlide(ep) {
+  const contestants = ep.contestants || [];
+  const validContestants = contestants.filter(c => c.name && c.name.trim());
+  const hasContestants = validContestants.length > 0;
+  const list = hasContestants
+    ? `<div class="setup-roster">
+         ${validContestants.map(c => {
+           const photo = c.photoUrl
+             ? `<img class="setup-roster-photo" src="${escHtml(c.photoUrl)}" alt="${escHtml(c.name)}">`
+             : `<div class="setup-roster-photo setup-roster-photo-placeholder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6"/>
+                  </svg>
+                </div>`;
+           return `<div class="setup-roster-card">
+             ${photo}
+             <div class="setup-roster-name">${escHtml(c.name)}</div>
+           </div>`;
+         }).join('')}
+       </div>`
+    : `<div class="setup-empty">
+         No contestants set for this episode yet. Open Studio to add them.
+       </div>`;
+  return `<div class="slide" data-type="setup">
+    <div class="setup-inner">
+      <div class="setup-eyebrow">${escHtml(ep.name)}</div>
+      <p class="setup-title">Ready to play?</p>
+      <p class="setup-sub">Contestants are defined in Studio. Confirm and start the game — or skip scoring to present without it.</p>
+      ${list}
+      <div class="setup-actions">
+        <button class="setup-btn" data-act="start" ${hasContestants ? '' : 'disabled'}>Start Game</button>
+        <button class="setup-link" data-act="skip">Skip — present without scoring</button>
+        <button class="setup-link" data-act="edit">Edit contestants in Studio</button>
+        <button class="setup-link" data-act="back">← Back to episodes</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildTitleSlide(ep) {
+  const f = ep.framing || {};
+  const t = (f.title || '').trim();
+  const splatize = s => escHtml(s).replace(/-/g, '<span class="splat">—</span>');
+  let wm;
+  const dashIdx = t.indexOf('-');
+  if (dashIdx > 0 && dashIdx < t.length - 1) {
+    wm = splatize(t.slice(0, dashIdx + 1)) + '<br>' + splatize(t.slice(dashIdx + 1));
+  } else {
+    wm = splatize(t);
+  }
+  const inner = f.logoUrl
+    ? `<img class="wordmark-logo" src="${escHtml(f.logoUrl)}" alt="${escHtml(f.title || 'Logo')}">
+       ${f.tagline ? `<p class="tagline">${safeRich(f.tagline)}</p>` : ''}`
+    : `<div class="wordmark">${wm}</div>
+       ${f.tagline ? `<p class="tagline">${safeRich(f.tagline)}</p>` : ''}`;
+  return `<div class="slide title-slide" data-type="static">
+    <div class="slide-frame">${inner}</div>
+  </div>`;
+}
+
+function buildContestantSlide(c, idx, total) {
+  const photo = c.photoUrl
+    ? `<img class="contestant-photo" src="${escHtml(c.photoUrl)}" alt="${escHtml(c.name || '')}">`
+    : `<div class="contestant-photo contestant-photo-placeholder">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+           <circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6"/>
+         </svg>
+       </div>`;
+  return `<div class="slide" data-type="contestant" data-cidx="${idx}">
+    <div class="slide-frame">
+      <div class="contestant-layout">
+        <div class="contestant-photo-wrap">${photo}</div>
+        <div class="contestant-text">
+          <h2 class="contestant-name">${escHtml(c.name || '')}</h2>
+          ${c.subtext ? `<p class="contestant-subtext">${safeRich(c.subtext)}</p>` : ''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildQuestionSlide(ep, q) {
+  let body = '';
+
+  switch (q.type) {
+    case 'two_choice': body = renderTwoChoice(q); break;
+    case 'over_under': body = renderOverUnder(q); break;
+    case 'guess_pct': body = renderGuessPct(q); break;
+    case 'name_as_many': body = renderNameAsMany(q); break;
+    case 'guess_breakdown': body = renderGuessBreakdown(q); break;
+    case 'ranking': body = renderRanking(q); break;
+    case 'guess_data': body = renderGuessData(q); break;
+    case 'tiebreaker': body = renderTiebreaker(q); break;
+    default: body = `<p class="q-text">[unknown question type: ${escHtml(q.type)}]</p>`;
+  }
+
+  // Tag the slide with type-specific classes so per-type CSS (e.g. reveal-time text shrink)
+  // can target the right slides.
+  const typeClasses = {
+    'two_choice': '',
+    'over_under': '',
+    'guess_pct': ' q-guess-slide',
+    'name_as_many': ' q-name-slide',
+    'guess_breakdown': ' q-break-slide',
+    'ranking': ' q-rank-slide',
+    'guess_data': ' q-data-slide',
+    'tiebreaker': ' q-tiebreaker-slide',
+  };
+  const extraClass = typeClasses[q.type] || '';
+  return `<div class="slide q-slide${extraClass}" data-type="question" data-qid="${escHtml(q.id)}">
+    <div class="slide-frame">
+      <div class="reveal-burst">!</div>
+      ${body}
+    </div>
+  </div>`;
+}
+
+// Build a content slide (heading+text, heading+image+text, image-only).
+// Content slides have no reveal — one click to advance.
+function buildContentSlide(q) {
+  const heading = q.heading || '';
+  const text = q.text || '';
+  const imageUrl = q.imageUrl || null;
+  let body = '';
+  if (q.type === 'content_heading_text') {
+    body = `<div class="content-slide-text${q.center ? ' center' : ''}">
+      ${heading ? `<h2 class="content-heading">${safeRich(heading)}</h2>` : ''}
+      ${text ? `<div class="content-body">${richBlock(text)}</div>` : ''}
+    </div>`;
+  } else if (q.type === 'content_heading_image_text') {
+    const img = imageUrl
+      ? `<img class="content-image" src="${escHtml(imageUrl)}" alt="${escHtml(heading || '')}">`
+      : `<div class="content-image" style="aspect-ratio: 4/3; background: var(--surface-2); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-style: italic;">No image</div>`;
+    const imageOnLeft = q.imageSide !== 'right';
+    body = `<div class="content-image-layout">
+      ${imageOnLeft ? `<div class="content-image-wrap">${img}</div>` : ''}
+      <div class="content-slide-text">
+        ${heading ? `<h2 class="content-heading">${safeRich(heading)}</h2>` : ''}
+        ${text ? `<div class="content-body">${richBlock(text)}</div>` : ''}
+      </div>
+      ${!imageOnLeft ? `<div class="content-image-wrap">${img}</div>` : ''}
+    </div>`;
+  } else if (q.type === 'content_image') {
+    const img = imageUrl
+      ? `<img src="${escHtml(imageUrl)}" alt="">`
+      : `<div style="width: 60%; aspect-ratio: 4/3; background: var(--surface-2); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-style: italic;">No image</div>`;
+    body = `<div class="content-image-only">${img}</div>`;
+  }
+  return `<div class="slide" data-type="content" data-qid="${escHtml(q.id)}" data-content-type="${escHtml(q.type)}">
+    <div class="slide-frame">${body}</div>
+  </div>`;
+}
+
+// Render rich text as paragraphs — splits on blank lines, supports inline em/strong/br
+function richBlock(s) {
+  if (s == null) return '';
+  const paras = String(s).split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  return paras.map(p => '<p>' + safeRich(p) + '</p>').join('');
+}
+
+function formatLabelForType(t) {
+  return ({
+    two_choice: 'More people believe…',
+    over_under: 'Over or under?',
+    guess_pct: 'Guess the percentage',
+    name_as_many: 'Name as many…',
+    guess_breakdown: 'Guess the breakdown',
+    ranking: 'Rank them'
+  })[t] || '';
+}
+
+// ── Renderers ──
+function renderTwoChoice(q) {
+  const opts = q.options || [];
+  return `<p class="q-text">${safeRich(q.text || '')}</p>
+    <div class="q-options">
+      ${opts.map((o, i) => `<div class="q-option${q.correct === i ? ' winner' : ''}">
+        <div class="q-option-label">${String.fromCharCode(65 + i)}</div>
+        <div class="q-option-text">${safeRich(o.text || '')}</div>
+        <div class="q-option-pct">${o.pct != null ? escHtml(o.pct) + '%' : ''}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function renderOverUnder(q) {
+  const baseline = q.number != null ? escHtml(q.number) + '%' : '?%';
+  const actual = q.actual != null ? escHtml(q.actual) + '%' : '';
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+    <div class="q-ou-options">
+      <div class="q-ou-btn${q.correct === 'over' ? ' winner-ou' : ''}">Over</div>
+      <div class="q-ou-btn${q.correct === 'under' ? ' winner-ou' : ''}">Under</div>
+    </div>
+    <div class="q-ou-number-wrap">
+      <span class="q-ou-number">${baseline}</span>
+      ${actual ? `<span class="q-ou-actual">${actual}</span>` : ''}
+    </div>`;
+}
+
+function renderGuessPct(q) {
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+    <div class="q-guess-answer">${escHtml(q.answer != null ? q.answer + '%' : '?')}</div>
+    ${q.note ? `<p class="q-guess-note">${safeRich(q.note)}</p>` : ''}
+    ${q.source ? `<p class="q-source">${escHtml(q.source)}</p>` : ''}`;
+}
+
+function buildBarChart(chartData) {
+  if (!chartData || !chartData.length) return '';
+  const W = 1000, H = 320;
+  const padL = 12, padR = 12, padT = 40, padB = 52;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const n = chartData.length;
+  const maxVal = Math.max(...chartData.map(d => Number(d.value) || 0), 1);
+  const slotW = chartW / n;
+  const barW = slotW * 0.6;
+  const barGap = slotW * 0.2;
+
+  let bars = '';
+  chartData.forEach((d, i) => {
+    const val = Number(d.value) || 0;
+    const barH = Math.max(2, (val / maxVal) * chartH);
+    const x = padL + i * slotW + barGap;
+    const y = padT + chartH - barH;
+    // Bar
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" fill="#f5e94a" stroke="#1a1814" stroke-width="2.5"/>`;
+    // Value label above bar
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" font-family="'Bungee', sans-serif" font-size="18" fill="#1a1814" font-weight="400">${escHtml(String(val))}%</text>`;
+    // X-axis label
+    const label = escHtml(String(d.label));
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${(padT + chartH + 28).toFixed(1)}" text-anchor="middle" font-family="'Bungee', sans-serif" font-size="18" fill="#1a1814">${label}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <line x1="${padL}" y1="${padT + chartH}" x2="${W - padR}" y2="${padT + chartH}" stroke="#1a1814" stroke-width="3"/>
+    ${bars}
+  </svg>`;
+}
+
+function renderTiebreaker(q) {
+  const answer = q.answer != null ? escHtml(String(q.answer)) + (q.unit ? escHtml(q.unit) : '') : '?';
+  return `<div class="q-tiebreaker-label">✦ Tiebreaker ✦</div>
+    <p class="q-text">${safeRich(q.text || '')}</p>
+    <div class="q-tiebreaker-answer">${answer}</div>`;
+}
+
+function renderGuessData(q) {
+  // Question text: replace ___ with a blank underline (answer word shown separately on reveal)
+  const rawText = q.text || '';
+  const blankSpan = `<span class="q-data-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
+  const questionHtml = safeRich(rawText).replace(/___/g, blankSpan);
+
+  const answer = q.answer || '';
+  const chartData = q.chartData || [];
+
+  const chartContent = chartData.length > 0
+    ? `<div class="q-data-chart">${buildBarChart(chartData)}</div>`
+    : `<div class="q-data-placeholder">Add chart data in the editor</div>`;
+
+  return `<p class="q-data-question">${questionHtml}</p>
+    <p class="q-data-answer-reveal">${escHtml(answer)}</p>
+    ${chartContent}`;
+}
+
+function renderNameAsMany(q) {
+  const showList = q.revealList !== false;
+  const list = showList && Array.isArray(q.answers) && q.answers.length
+    ? `<div class="q-name-list">${q.answers.map(a => {
+        if (typeof a === 'string') return `<div class="q-name-item">${escHtml(a)}</div>`;
+        return `<div class="q-name-item">${escHtml(a.text || '')}${a.pct != null ? `<span class="pct">${escHtml(a.pct)}%</span>` : ''}</div>`;
+      }).join('')}</div>`
+    : '';
+  const stat = q.statLine ? `<p class="q-name-stat">${safeRich(q.statLine)}</p>` : '';
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+    ${q.prompt ? `<p class="q-name-prompt">${safeRich(q.prompt)}</p>` : ''}
+    ${list}
+    ${stat}
+    ${q.source ? `<p class="q-source">${escHtml(q.source)}</p>` : ''}`;
+}
+
+function renderGuessBreakdown(q) {
+  const opts = q.options || [];
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+    <div class="q-break-rows">
+      ${opts.map(o => `<div class="q-break-row">
+        <div class="q-break-label">${safeRich(o.label || '')}</div>
+        <div class="q-break-pct">${o.pct != null ? escHtml(o.pct) + '%' : ''}</div>
+      </div>`).join('')}
+    </div>
+    ${q.source ? `<p class="q-source">${escHtml(q.source)}</p>` : ''}`;
+}
+
+function renderRanking(q) {
+  const items = q.items || [];
+  const N = items.length;
+  const hasStats = items.some(it => it.stat && String(it.stat).trim());
+  const isMany = N > 6;
+  const scatter = scatterPositions(q.id || 'r', N, { slotXc: 55, slotW: 50, jitter: isMany ? 0.25 : 0.5 });
+
+  const tiles = items.map((it, i) => {
+    const rank = i + 1;
+    const sc = scatter[i];
+    const statRaw = it.stat ? String(it.stat).trim() : '';
+    const statDisplay = statRaw && !isNaN(Number(statRaw)) ? statRaw + '%' : statRaw;
+    return `<div class="q-rank-tile"
+      data-rank="${rank}"
+      data-name="${escHtml(it.name || '')}"
+      data-stat="${escHtml(statDisplay)}"
+      style="--rx:${sc.x.toFixed(1)}%;--ry:${sc.y.toFixed(1)}%;--rrot:${sc.rot.toFixed(1)}deg">
+      <span class="q-rank-tile-name">${escHtml(it.name || '')}</span>
+    </div>`;
+  }).join('');
+
+  const listCols = isMany ? '2' : '1';
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+  <div class="q-rank-list" data-cols="${listCols}" data-has-stats="${hasStats}" data-many="${isMany}"></div>
+  <div class="q-rank-stage" data-rank-total="${N}" data-has-stats="${hasStats}" data-many="${isMany}">
+    ${tiles}
+  </div>`;
+}
+
+// Deterministic per-item scatter coordinates. Returns array of {x, y, rot} in % units.
+// Avoids the slot column on the left so initial layout doesn't sit on top of the future list.
+function scatterPositions(seed, n, opts = {}) {
+  // Use the same hash/PRNG as shuffledOrder
+  let h = 2166136261;
+  const seedStr = 'scatter:' + seed;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const rand = () => {
+    h = (h + 0x6D2B79F5) | 0;
+    let t = h;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  // Initial scatter spans the full stage. Items can overlap the slot column —
+  // they'll drift away once reveals start.
+  const positions = [];
+  // Use a poisson-disc-ish jittered grid so items spread out evenly without overlapping too much
+  const cols = Math.ceil(Math.sqrt(n * 1.4));
+  const rows = Math.ceil(n / cols);
+  const cellW = 92 / cols; // leave ~4% margin each side
+  const cellH = 92 / rows;
+  // shuffle cells so items don't go in row-major order
+  const cellOrder = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cellOrder.push({ r, c });
+  for (let i = cellOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [cellOrder[i], cellOrder[j]] = [cellOrder[j], cellOrder[i]];
+  }
+  for (let i = 0; i < n; i++) {
+    const cell = cellOrder[i];
+    const cx = 4 + cell.c * cellW + cellW / 2;
+    const cy = 4 + cell.r * cellH + cellH / 2;
+    const jitter = opts.jitter !== undefined ? opts.jitter : 0.55;
+    const jitterX = (rand() - 0.5) * cellW * jitter;
+    const jitterY = (rand() - 0.5) * cellH * jitter;
+    const rot = (rand() - 0.5) * 8;
+    positions.push({ x: cx + jitterX, y: cy + jitterY, rot });
+  }
+  return positions;
+}
+
+// Deterministic Fisher-Yates: PRNG seeded from a string id so two windows agree on order.
+function shuffledOrder(seed, n) {
+  let h = 2166136261; // FNV-1a-ish hash of the seed
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const rand = () => {
+    // Mulberry32
+    h = (h + 0x6D2B79F5) | 0;
+    let t = h;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const arr = Array.from({ length: n }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  // Edge case: if shuffle happens to land in correct order on a small list, swap first two
+  if (n >= 2 && arr.every((v, i) => v === i)) {
+    [arr[0], arr[1]] = [arr[1], arr[0]];
+  }
+  return arr;
+}
+
+function buildCloseSlide() {
+  return `<div class="slide" id="close-slide" data-type="static"></div>`;
+}
+
+function buildDeck(ep) {
+  let html = '';
+  html += buildSetupSlide(ep);
+  html += buildTitleSlide(ep);
+  // Contestant slides (one per defined contestant)
+  const contestants = ep.contestants || [];
+  contestants.forEach((c, i) => { html += buildContestantSlide(c, i, contestants.length); });
+  // Build each item — content slides and question slides interleave in whatever order
+  ep.questions.forEach(q => { html += buildItemSlide(ep, q); });
+  html += buildCloseSlide();
+  deckEl.innerHTML = html;
+  slides = Array.from(deckEl.querySelectorAll('.slide'));
+  // Scale frames + fit contestant names after layout settles
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    scaleFrames();
+    fitContestantNames();
+  }));
+}
+
+// Dispatch builder: picks question vs content slide based on type
+const CONTENT_TYPES = ['content_heading_text', 'content_heading_image_text', 'content_image'];
+function isContentType(type) { return CONTENT_TYPES.includes(type); }
+
+function buildItemSlide(ep, q) {
+  if (isContentType(q.type)) return buildContentSlide(q);
+  return buildQuestionSlide(ep, q);
+}
+
+// ╔════════════════════════════════════════════════╗
+// ║ FLOW                                           ║
+// ╚════════════════════════════════════════════════╝
+
+// Build a stable "key" for a slide so revealed-state survives Show-Scores insertions
+function slideKey(idx) {
+  const s = slides[idx];
+  if (!s) return null;
+  if (s.dataset.qid) return 'q:' + s.dataset.qid;
+  return 'idx:' + idx + ':' + s.dataset.type;
+}
+
+// ─── PICKER ───
+function showPicker() {
+  currentEpisode = null;
+  state.phase = 'picker';
+  state.episodeId = null;
+  state.contestants = [];
+  state.scoring = false;
+  state.current = 0;
+  state.revealed = {};
+  state.showScoresInjected = false;
+
+  hintEl.style.display = 'none';
+  navEl.style.display = 'none';
+  deckEl.innerHTML = buildPickerSlide();
+  slides = Array.from(deckEl.querySelectorAll('.slide'));
+  slides[0].classList.add('active');
+  attachPickerHandlers();
+
+  updatePresenterSurface();
+  broadcastState();
+}
+
+function attachPickerHandlers() {
+  const slide = slides[0];
+  slide.querySelectorAll('.episode-card').forEach(card => {
+    card.addEventListener('click', e => {
+      e.stopPropagation();
+      loadEpisodeForPlay(card.dataset.ep);
+    });
+  });
+  slide.querySelector('[data-act="studio"]').addEventListener('click', e => {
+    e.stopPropagation(); openStudio();
+  });
+  slide.querySelector('[data-act="import"]').addEventListener('click', e => {
+    e.stopPropagation(); document.getElementById('import-file').click();
+  });
+  const presBtn = slide.querySelector('[data-act="presenter"]');
+  if (presBtn) presBtn.addEventListener('click', e => { e.stopPropagation(); openAudienceWindow(); });
+}
+
+// ─── SETUP / LAUNCH ───
+function loadEpisodeForPlay(id) {
+  const ep = migrateEpisode(getEpisode(id));
+  if (!ep) { alert('Episode not found.'); return; }
+  currentEpisode = ep;
+  state.episodeId = id;
+  state.phase = 'setup';
+  buildDeck(ep);
+  state.current = 0;
+  slides.forEach(s => s.classList.remove('active'));
+  slides[0].classList.add('active');
+  attachSetupHandlers();
+  navEl.style.display = 'none';
+  hintEl.style.display = 'block';
+  hintEl.textContent = 'Confirm to start';
+
+  updatePresenterSurface();
+  broadcastState();
+}
+
+function attachSetupHandlers() {
+  const slide = slides[0];
+  const startBtn = slide.querySelector('[data-act="start"]');
+  if (startBtn) startBtn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
+  const skipBtn = slide.querySelector('[data-act="skip"]');
+  if (skipBtn) skipBtn.addEventListener('click', e => { e.stopPropagation(); skipSetup(); });
+  const editBtn = slide.querySelector('[data-act="edit"]');
+  if (editBtn) editBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (currentEpisode && !currentEpisode.isDemo) {
+      openStudio();
+      // editEpisode requires the saved version — get a fresh copy
+      const fresh = getEpisode(currentEpisode.id);
+      if (fresh) editEpisode(fresh);
+    } else {
+      openStudio();
+    }
+  });
+  const backBtn = slide.querySelector('[data-act="back"]');
+  if (backBtn) backBtn.addEventListener('click', e => { e.stopPropagation(); showPicker(); });
+}
+
+function startGame() {
+  // Pull contestants from the loaded episode (defined in Studio)
+  const sourced = (currentEpisode && Array.isArray(currentEpisode.contestants))
+    ? currentEpisode.contestants.filter(c => c.name && c.name.trim())
+    : [];
+  state.contestants = sourced.map(c => ({ name: c.name.trim(), score: 0 }));
+  state.scoring = state.contestants.length > 0;
+  if (!state.scoring) {
+    // No contestants defined — fall through as a present-only episode
+    skipSetup();
+    return;
+  }
+  launchGame();
+}
+function skipSetup() {
+  state.contestants = [];
+  state.scoring = false;
+  launchGame();
+}
+function launchGame() {
+  state.phase = 'play';
+  state.revealed = {};
+  state.showScoresInjected = false;
+  buildNav();
+  renderCloseSlide();
+  goTo(1);
+  navEl.style.display = 'flex';
+  updatePresenterSurface();
+  broadcastState();
+}
+
+// ─── NAV ───
+function buildNav() {
+  navEl.innerHTML = '';
+  slides.forEach((_, i) => {
+    if (i === 0) return;
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === state.current ? ' active' : '');
+    dot.addEventListener('click', e => { e.stopPropagation(); goTo(i); });
+    navEl.appendChild(dot);
+  });
+}
+
+function goTo(idx) {
+  if (idx < 1 || idx >= slides.length) return;
+  // If we're leaving the synthetic Scores slide, remove it from the deck
+  if (state.showScoresInjected) {
+    const cur = slides[state.current];
+    if (cur && cur.dataset.type === 'scores' && idx !== state.current) {
+      removeScoresSlide();
+      // After removal, indexes shift — recalc the target idx if it was after the inserted one
+      if (idx > state.current) idx--;
+    }
+  }
+  if (slides[state.current]) slides[state.current].classList.remove('active');
+  const dots = navEl.querySelectorAll('.nav-dot');
+  if (dots[state.current - 1]) dots[state.current - 1].classList.remove('active');
+  state.current = idx;
+  if (slides[state.current]) slides[state.current].classList.add('active');
+  if (dots[state.current - 1]) dots[state.current - 1].classList.add('active');
+  if (state.current === slides.length - 1) renderCloseSlide();
+  // Reflect cached revealed state (in case we navigated back to a question already shown)
+  applyRevealedClasses();
+  updateHint();
+  updatePresenterSurface();
+  broadcastState();
+}
+
+function applyRevealedClasses() {
+  // Mirror state.revealed → DOM classes
+  slides.forEach((s, i) => {
+    const k = slideKey(i);
+    if (!s.classList.contains('q-slide')) return;
+    const wasRevealed = s.classList.contains('revealed');
+    const rankList = s.querySelector('.q-rank-stage');
+    if (rankList) {
+      // Ranking: state.revealed[k] is a count (0..N); slide-level 'revealed' only when full
+      const count = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
+      const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
+      applyRankingState(s, count);
+      s.classList.toggle('revealed', count >= total && total > 0);
+    } else {
+      s.classList.toggle('revealed', !!(k && state.revealed[k]));
+    }
+    if (wasRevealed !== s.classList.contains('revealed')) {
+      refitSlideQuestionText(s);
+    }
+  });
+}
+
+function handleAdvance() {
+  const slide = slides[state.current];
+  if (!slide) return;
+  if (slide.dataset.type === 'setup' || slide.dataset.type === 'picker') return;
+  if (slide.classList.contains('q-slide')) {
+    const k = slideKey(state.current);
+    // Ranking question: reveal one item at a time
+    const rankList = slide.querySelector('.q-rank-stage');
+    if (rankList) {
+      const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      if (cur < total) {
+        const nextCount = cur + 1;
+        // Scale up the scatter tile (it grows large, then fades)
+        const tile = rankList.querySelector(`.q-rank-tile[data-rank="${nextCount}"]`);
+        if (tile) tile.classList.add('q-rank-tile--exiting');
+        // After tile exit animation, add list item and broadcast
+        setTimeout(() => {
+          if (k) state.revealed[k] = nextCount;
+          applyRankingState(slide, nextCount);
+          if (nextCount === total) { slide.classList.add('revealed'); refitSlideQuestionText(slide); }
+          updateHint();
+          updatePresenterSurface();
+          broadcastState();
+        }, 380);
+        return;
+      }
+      // already fully revealed → fall through to advance
+    } else if (!slide.classList.contains('revealed')) {
+      // Non-ranking: classic single-click reveal
+      if (k) state.revealed[k] = true;
+      slide.classList.add('revealed');
+      refitSlideQuestionText(slide);
+      updateHint();
+      updatePresenterSurface();
+      broadcastState();
+      return;
+    }
+  }
+  goTo(state.current + 1);
+}
+
+function handleRetreat() {
+  const slide = slides[state.current];
+  if (slide && slide.classList.contains('q-slide')) {
+    const k = slideKey(state.current);
+    const rankList = slide.querySelector('.q-rank-stage');
+    if (rankList) {
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      if (cur > 0) {
+        const nextCount = cur - 1;
+        if (nextCount === 0) {
+          if (k) delete state.revealed[k];
+        } else if (k) {
+          state.revealed[k] = nextCount;
+        }
+        slide.classList.remove('revealed');
+        applyRankingState(slide, nextCount);
+        refitSlideQuestionText(slide);
+        updateHint();
+        updatePresenterSurface();
+        broadcastState();
+        return;
+      }
+    } else if (slide.classList.contains('revealed')) {
+      if (k) delete state.revealed[k];
+      slide.classList.remove('revealed');
+      refitSlideQuestionText(slide);
+      updateHint();
+      updatePresenterSurface();
+      broadcastState();
+      return;
+    }
+  }
+  goTo(state.current - 1);
+}
+
+// Apply a "show N items in correct ranked order" state to a ranking slide.
+// The list is a normal flow grid — no absolute positioning, no overlap possible.
+function applyRankingState(slide, count) {
+  const stage = slide.querySelector('.q-rank-stage');
+  const list = slide.querySelector('.q-rank-list');
+  if (!stage || !list) return;
+  const hasStats = stage.dataset.hasStats === 'true';
+
+  // Fade out revealed scatter tiles
+  stage.querySelectorAll('.q-rank-tile').forEach(tile => {
+    tile.classList.toggle('q-rank-tile--gone', parseInt(tile.dataset.rank, 10) <= count);
+  });
+
+  // Rebuild the flow list from scratch
+  const tiles = Array.from(stage.querySelectorAll('.q-rank-tile'))
+    .sort((a, b) => parseInt(a.dataset.rank) - parseInt(b.dataset.rank))
+    .filter(t => parseInt(t.dataset.rank) <= count);
+
+  list.innerHTML = tiles.map(t => {
+    const rank = parseInt(t.dataset.rank);
+    const name = t.dataset.name || '';
+    const stat = t.dataset.stat || '';
+    const isNew = rank === count;
+    return `<div class="q-rank-list-item${isNew ? ' q-rank-list-item--new' : ''}">
+      <div class="q-rank-num">${rank}</div>
+      <div class="q-rank-name">${escHtml(name)}</div>
+      ${hasStats && stat ? `<div class="q-rank-stat">${escHtml(stat)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function updateHint() {
+  if (!slides[state.current]) return;
+  if (state.current === 0) {
+    if (slides[0].dataset.type === 'picker') hintEl.textContent = 'Pick an episode';
+    else hintEl.textContent = 'Enter names and start';
+    return;
+  }
+  const slide = slides[state.current];
+  const isQ = slide.classList.contains('q-slide');
+  const isRevealed = slide.classList.contains('revealed');
+  const rankList = slide.querySelector('.q-rank-stage');
+  if (rankList) {
+    const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
+    const k = slideKey(state.current);
+    const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
+    if (revealedCount < total) hintEl.textContent = `Click or Space — reveal #${revealedCount + 1} of ${total}`;
+    else if (state.current === slides.length - 1) hintEl.textContent = '← Navigate back';
+    else hintEl.textContent = 'Space / Click to advance';
+  } else if (isQ && !isRevealed) hintEl.textContent = 'Click or Space to reveal';
+  else if (state.current === slides.length - 1) hintEl.textContent = '← Navigate back';
+  else hintEl.textContent = 'Space / Click to advance';
+}
+
+// ─── SCORES SLIDE (synthetic, on-demand) ───
+function buildScoresSlideHTML() {
+  const sorted = [...state.contestants].sort((a, b) => b.score - a.score);
+  const rows = sorted.map((c, i) => `
+    <div class="lb-row">
+      <div class="lb-rank">${i + 1}</div>
+      <div class="lb-name">${escHtml(c.name)}</div>
+      <div class="lb-score">${c.score}</div>
+    </div>`).join('');
+  return `<div class="slide" data-type="scores">
+    <div class="slide-frame">
+      <div class="close-inner">
+        <p class="close-title"><em>Scores.</em></p>
+        <div class="leaderboard">${rows}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function showScores() {
+  if (state.phase !== 'play' || !state.scoring || !state.contestants.length) return;
+  // If already on the scores slide, do nothing
+  if (slides[state.current] && slides[state.current].dataset.type === 'scores') return;
+  // If a scores slide is already injected elsewhere, remove it first
+  if (state.showScoresInjected) removeScoresSlide();
+
+  const insertAfter = state.current;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = buildScoresSlideHTML();
+  const newSlide = tmp.firstElementChild;
+  // Insert in DOM after the current slide
+  const cur = slides[insertAfter];
+  cur.insertAdjacentElement('afterend', newSlide);
+  slides = Array.from(deckEl.querySelectorAll('.slide'));
+  state.showScoresInjected = true;
+  state.showScoresAfter = insertAfter;
+  buildNav();
+  scaleFrames();
+  goTo(insertAfter + 1);
+}
+
+function removeScoresSlide() {
+  const idx = slides.findIndex(s => s.dataset.type === 'scores');
+  if (idx < 0) { state.showScoresInjected = false; return; }
+  slides[idx].remove();
+  slides = Array.from(deckEl.querySelectorAll('.slide'));
+  state.showScoresInjected = false;
+  state.showScoresAfter = -1;
+  buildNav();
+}
+
+// ─── SCORE MUTATIONS ───
+function adjustScore(idx, delta) {
+  if (!state.contestants[idx]) return;
+  state.contestants[idx].score = Math.max(0, state.contestants[idx].score + delta);
+  if (state.current === slides.length - 1) renderCloseSlide();
+  // If we're on the scores slide, rebuild it in place
+  const cur = slides[state.current];
+  if (cur && cur.dataset.type === 'scores') {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = buildScoresSlideHTML();
+    const fresh = tmp.firstElementChild;
+    cur.replaceWith(fresh);
+    fresh.classList.add('active');
+    slides = Array.from(deckEl.querySelectorAll('.slide'));
+    scaleFrames();
+  }
+  updatePresenterSurface();
+  broadcastState();
+}
+
+// ─── CLOSE / FINAL ───
+function renderCloseSlide() {
+  const closeSlide = document.getElementById('close-slide');
+  if (!closeSlide) return;
+  const ep = currentEpisode;
+  const closeTitle = ep ? ep.framing.closeTitle : '<em>One honest mirror.</em>';
+  const closeBody = ep ? ep.framing.closeBody : '';
+  if (state.scoring && state.contestants.length > 0) {
+    const sorted = [...state.contestants].sort((a, b) => b.score - a.score);
+    const winner = sorted[0];
+    const tied = sorted.filter(c => c.score === winner.score && winner.score > 0);
+    const titleHtml = winner.score === 0
+      ? `<em>No score yet.</em>`
+      : tied.length > 1
+        ? `It's a <em>tie!</em>`
+        : `<em>${escHtml(winner.name)}</em> wins!`;
+    const rows = sorted.map((c, i) => `
+      <div class="lb-row ${i === 0 && winner.score > 0 ? 'first' : ''}">
+        <div class="lb-rank">${i === 0 && winner.score > 0 ? '★' : i + 1}</div>
+        <div class="lb-name">${escHtml(c.name)}</div>
+        <div class="lb-score">${c.score}</div>
+      </div>`).join('');
+    closeSlide.innerHTML = `<div class="slide-frame">
+      <div class="close-inner">
+        <p class="close-title">${titleHtml}</p>
+        <div class="leaderboard">${rows}</div>
+      </div>
+    </div>`;
+  } else {
+    closeSlide.innerHTML = `<div class="slide-frame">
+      <div class="close-inner">
+        <p class="close-title">${safeRich(closeTitle)}</p>
+        ${closeBody ? `<div class="rule"></div><p class="close-body">${safeRich(closeBody)}</p>` : ''}
+      </div>
+    </div>`;
+  }
+  // Scale the newly injected frame to match all other slides
+  scaleFrames();
+}
+
+// ─── KEY + CLICK ───
+document.addEventListener('keydown', e => {
+  if (document.getElementById('studio').classList.contains('visible')) return;
+  if (e.target.matches('input, textarea, select')) return;
+  // Audience window doesn't navigate locally — only via broadcast
+  if (role === 'audience') return;
+  if (state.current === 0) return;
+  if (e.code === 'Space' || e.code === 'ArrowRight') {
+    e.preventDefault(); handleAdvance();
+  } else if (e.code === 'ArrowLeft') {
+    e.preventDefault(); handleRetreat();
+  } else if (e.code === 'KeyS' && state.phase === 'play' && state.scoring) {
+    e.preventDefault(); showScores();
+  }
+});
+
+deckEl.addEventListener('click', e => {
+  if (document.getElementById('studio').classList.contains('visible')) return;
+  if (role === 'audience') return;
+  if (state.current === 0) return;
+  if (e.target.closest('button, input, textarea, select, .episode-card')) return;
+  handleAdvance();
+});
+
+// ╔════════════════════════════════════════════════╗
+// ║ PRESENTER MODE                                 ║
+// ╚════════════════════════════════════════════════╝
+let audienceWindow = null;
+let bc = null;
+
+// Cross-window sync: use BroadcastChannel where available, fall back to localStorage 'storage' events.
+// Both work across same-origin tabs/windows (with some caveats on file:// — the localStorage fallback
+// is the more reliable path there).
+const SYNC_KEY = 'nonCensus.sync';
+const HANDSHAKE_KEY = 'nonCensus.handshake';
+
+function postSyncMessage(msg) {
+  // Always write to localStorage too — fires 'storage' event in other windows
+  try {
+    const wrapped = { ...msg, _ts: Date.now(), _from: role };
+    localStorage.setItem(SYNC_KEY, JSON.stringify(wrapped));
+  } catch (e) {}
+  if (bc) {
+    try { bc.postMessage(msg); } catch (e) {}
+  }
+}
+
+function initBroadcast() {
+  if (typeof BroadcastChannel === 'undefined') return null;
+  try {
+    return new BroadcastChannel('non-census-sync');
+  } catch (e) { return null; }
+}
+bc = initBroadcast();
+
+function broadcastState() {
+  // Only the presenter/solo window broadcasts state outward
+  if (role === 'audience') return;
+  postSyncMessage({
+    type: 'state',
+    payload: {
+      phase: state.phase,
+      episodeId: state.episodeId,
+      contestants: state.contestants,
+      scoring: state.scoring,
+      current: state.current,
+      revealed: state.revealed,
+      showScoresInjected: state.showScoresInjected,
+      showScoresAfter: state.showScoresAfter,
+    }
+  });
+}
+
+function openAudienceWindow() {
+  if (audienceWindow && !audienceWindow.closed) {
+    audienceWindow.focus();
+    return;
+  }
+  // Open a new window pointed at the same URL with #audience hash
+  const baseUrl = window.location.href.split('#')[0];
+  const url = baseUrl + '#audience';
+  audienceWindow = window.open(url, 'non-census-audience', 'width=1280,height=800');
+  if (!audienceWindow) {
+    alert('Popup blocked. Please allow popups for this site, then click "Open Audience Window" again.');
+    return;
+  }
+  // Optimistically flip into presenter mode after a short delay even if handshake doesn't arrive
+  // (some browsers block BroadcastChannel on file:// — the localStorage path will eventually work)
+  setTimeout(() => {
+    if (audienceWindow && !audienceWindow.closed && role !== 'presenter') {
+      role = 'presenter';
+      document.body.classList.add('presenter-mode');
+      updatePresenterSurface();
+      broadcastState();
+    }
+  }, 800);
+}
+
+// Watch for the audience window being closed; revert to solo mode if so
+setInterval(() => {
+  if (role === 'presenter' && (!audienceWindow || audienceWindow.closed)) {
+    role = 'solo';
+    audienceWindow = null;
+    document.body.classList.remove('presenter-mode');
+    updatePresenterSurface();
+  }
+}, 1000);
+
+// Handle sync messages from BOTH BroadcastChannel and localStorage 'storage' events
+function handleSyncMessage(msg) {
+  if (!msg || !msg.type) return;
+  if (role === 'audience') {
+    if (msg.type === 'state') {
+      audienceGotState = true;
+      applyAudienceState(msg.payload);
+      // Stay in waiting state until the presenter actually starts a game (phase = play)
+      if (msg.payload && msg.payload.phase === 'play') {
+        document.body.classList.remove('audience-waiting');
+      } else {
+        document.body.classList.add('audience-waiting');
+      }
+    }
+  } else {
+    // Presenter/solo side
+    if (msg.type === 'hello-audience') {
+      role = 'presenter';
+      audienceWindow = audienceWindow || (window.opener ? window.opener : null);
+      document.body.classList.add('presenter-mode');
+      updatePresenterSurface();
+      broadcastState();
+    } else if (msg.type === 'goodbye-audience') {
+      // Don't immediately demote — beforeunload can fire on navigation too. Let the interval check do it.
+    }
+  }
+}
+
+if (bc) {
+  bc.addEventListener('message', e => handleSyncMessage(e.data));
+}
+window.addEventListener('storage', e => {
+  if (e.key !== SYNC_KEY || !e.newValue) return;
+  try {
+    const msg = JSON.parse(e.newValue);
+    if (msg._from === role) return; // ignore our own messages
+    handleSyncMessage(msg);
+  } catch (err) {}
+});
+
+// On audience window load, announce ourselves
+if (isAudienceWindow) {
+  // Show waiting screen until state arrives
+  document.body.classList.add('audience-waiting');
+  setTimeout(() => {
+    postSyncMessage({ type: 'hello-audience' });
+  }, 50);
+  // Re-announce periodically until we get state, in case presenter wasn't listening yet
+  let helloRetries = 0;
+  const helloInterval = setInterval(() => {
+    if (audienceGotState || helloRetries++ > 20) {
+      clearInterval(helloInterval);
+      return;
+    }
+    postSyncMessage({ type: 'hello-audience' });
+  }, 500);
+  window.addEventListener('beforeunload', () => {
+    try { postSyncMessage({ type: 'goodbye-audience' }); } catch (e) {}
+  });
+}
+
+// Audience: rebuild view from state payload
+function applyAudienceState(p) {
+  // 1. Make sure the right episode is loaded
+  if (p.phase === 'picker') {
+    if (!deckEl.querySelector('[data-type="picker"]') || currentEpisode != null) {
+      currentEpisode = null;
+      deckEl.innerHTML = buildPickerSlide();
+      slides = Array.from(deckEl.querySelectorAll('.slide'));
+      slides[0].classList.add('active');
+    }
+    state = { ...state, ...p };
+    return;
+  }
+  if (p.phase === 'setup' || p.phase === 'play') {
+    if (!currentEpisode || currentEpisode.id !== p.episodeId) {
+      const ep = migrateEpisode(getEpisode(p.episodeId));
+      if (!ep) return;
+      currentEpisode = ep;
+      buildDeck(ep);
+    }
+  }
+  state = { ...state, ...p, contestants: p.contestants || [] };
+  currentEpisode = currentEpisode; // unchanged
+
+  // Render close slide content with current scoring
+  renderCloseSlide();
+
+  // Handle injected scores slide
+  const hasInjected = !!deckEl.querySelector('[data-type="scores"]');
+  if (state.showScoresInjected && !hasInjected) {
+    // insert into DOM at the right position
+    const after = slides[state.showScoresAfter];
+    if (after) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = buildScoresSlideHTML();
+      after.insertAdjacentElement('afterend', tmp.firstElementChild);
+      slides = Array.from(deckEl.querySelectorAll('.slide'));
+    }
+  } else if (!state.showScoresInjected && hasInjected) {
+    deckEl.querySelector('[data-type="scores"]').remove();
+    slides = Array.from(deckEl.querySelectorAll('.slide'));
+  } else if (state.showScoresInjected && hasInjected) {
+    // Rebuild contents in case scores changed
+    const existing = deckEl.querySelector('[data-type="scores"]');
+    const tmp = document.createElement('div');
+    tmp.innerHTML = buildScoresSlideHTML();
+    existing.replaceWith(tmp.firstElementChild);
+    slides = Array.from(deckEl.querySelectorAll('.slide'));
+  }
+
+  // Apply current slide + revealed state
+  slides.forEach((s, i) => s.classList.toggle('active', i === state.current));
+  applyRevealedClasses();
+
+}
+
+// ─── PRESENTER UI: render the control surface ───
+const presFrame = document.getElementById('presenter-frame');
+const psSlotCurrent = document.getElementById('preview-slot-current');
+const psSlotNext = document.getElementById('preview-slot-next');
+const psScoreboard = document.getElementById('pside-scoreboard');
+const psNotes = document.getElementById('pside-notes');
+const psMeta = document.getElementById('pside-meta');
+const pbarProgress = document.getElementById('pbar-progress');
+const pbarPrev = document.getElementById('pbar-prev');
+const pbarNext = document.getElementById('pbar-next');
+const pbarAdvance = document.getElementById('pbar-advance');
+const pbarScores = document.getElementById('pbar-scores');
+const pbarEnd = document.getElementById('pbar-end');
+
+if (pbarPrev) pbarPrev.addEventListener('click', e => { e.stopPropagation(); handleRetreat(); });
+if (pbarNext) pbarNext.addEventListener('click', e => { e.stopPropagation(); goTo(state.current + 1); });
+if (pbarAdvance) pbarAdvance.addEventListener('click', e => { e.stopPropagation(); handleAdvance(); });
+if (pbarScores) pbarScores.addEventListener('click', e => { e.stopPropagation(); showScores(); });
+if (pbarEnd) pbarEnd.addEventListener('click', e => {
+  e.stopPropagation();
+  if (audienceWindow && !audienceWindow.closed) audienceWindow.close();
+  role = 'solo';
+  audienceWindow = null;
+  document.body.classList.remove('presenter-mode');
+  updatePresenterSurface();
+});
+
+// Render a slide preview into a slot, scaled to fit.
+function renderSlidePreview(slotEl, slideEl, opts = {}) {
+  slotEl.innerHTML = '';
+  if (!slideEl) {
+    slotEl.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-muted); font-style:italic; font-size:13px;">${opts.emptyText || '— end —'}</div>`;
+    return;
+  }
+  // Clone the slide so we don't mess with the live DOM
+  const clone = slideEl.cloneNode(true);
+  clone.classList.add('active');
+  if (opts.revealed) clone.classList.add('revealed');
+  else if (opts.unrevealed) {
+    clone.classList.remove('revealed');
+    // For ranking, also strip per-row reveals so the preview shows the unrevealed state
+    // and reset each row to its original scatter coords (in case drift mutated them)
+    clone.querySelectorAll('.q-rank-row').forEach(r => {
+      r.classList.remove('revealed-row');
+      const bx = r.dataset.baseX, by = r.dataset.baseY, br = r.dataset.baseRot;
+      if (bx) r.style.setProperty('--rx', bx + '%');
+      if (by) r.style.setProperty('--ry', by + '%');
+      if (br) r.style.setProperty('--rrot', br + 'deg');
+    });
+  }
+  slotEl.appendChild(clone);
+  // Scale to fit the slot
+  fitSlideInSlot(slotEl, clone);
+}
+
+function fitSlideInSlot(slot, slideEl) {
+  // The .slide is a full-window container; the .slide-frame inside it is 1280×720.
+  // For previews, we size the slide to fill the slot and scale the frame to fit.
+  const slotRect = slot.getBoundingClientRect();
+  if (slotRect.width === 0) return;
+  const baseW = 1280, baseH = 720;
+  slideEl.style.width = slotRect.width + 'px';
+  slideEl.style.height = slotRect.height + 'px';
+  slideEl.style.transform = '';
+  slideEl.style.left = '0';
+  slideEl.style.top = '0';
+  // Scale the frame inside to fit the slot
+  const frame = slideEl.querySelector('.slide-frame');
+  if (frame) {
+    const scale = Math.min(slotRect.width / baseW, slotRect.height / baseH);
+    frame.style.transform = `scale(${scale})`;
+  }
+}
+
+function updatePresenterSurface() {
+  // Manage the `in-play` body class regardless of role — affects which UI is visible
+  if (role === 'presenter' && state.phase === 'play') {
+    document.body.classList.add('in-play');
+  } else {
+    document.body.classList.remove('in-play');
+  }
+  // Only render presenter frame contents when actually in play presenter mode
+  if (role !== 'presenter' || state.phase !== 'play') return;
+
+  // Current preview
+  const cur = slides[state.current];
+  renderSlidePreview(psSlotCurrent, cur);
+  // Next preview (un-revealed for question slides)
+  const next = slides[state.current + 1];
+  renderSlidePreview(psSlotNext, next, { unrevealed: true, emptyText: '— end of episode —' });
+
+  // Progress label
+  const totalSlides = slides.length - 1; // excludes setup
+  pbarProgress.textContent = state.current === 0
+    ? 'setup'
+    : `Slide ${state.current} of ${totalSlides}`;
+
+  // Advance button label
+  const rankList = cur ? cur.querySelector('.q-rank-stage') : null;
+  if (rankList) {
+    const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
+    const k = slideKey(state.current);
+    const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
+    if (revealedCount < total) {
+      pbarAdvance.textContent = `Reveal #${revealedCount + 1} of ${total}`;
+      pbarAdvance.disabled = false;
+    } else if (state.current === slides.length - 1) {
+      pbarAdvance.textContent = 'End';
+      pbarAdvance.disabled = true;
+    } else {
+      pbarAdvance.textContent = 'Next →';
+      pbarAdvance.disabled = false;
+    }
+  } else if (cur && cur.classList.contains('q-slide') && !cur.classList.contains('revealed')) {
+    pbarAdvance.textContent = 'Reveal';
+    pbarAdvance.disabled = false;
+  } else if (cur && state.current === slides.length - 1) {
+    pbarAdvance.textContent = 'End';
+    pbarAdvance.disabled = true;
+  } else {
+    pbarAdvance.textContent = 'Next →';
+    pbarAdvance.disabled = false;
+  }
+  pbarPrev.disabled = state.current <= 1;
+  pbarNext.disabled = state.current >= slides.length - 1;
+  pbarScores.disabled = !state.scoring || !state.contestants.length || (cur && cur.dataset.type === 'scores');
+
+  // Scoreboard
+  renderPresenterScoreboard();
+
+  // Host notes for this slide
+  let notes = '';
+  if (cur && cur.dataset.qid && currentEpisode) {
+    const q = currentEpisode.questions.find(x => x.id === cur.dataset.qid);
+    if (q && q.host_notes) notes = q.host_notes;
+  }
+  psNotes.innerHTML = safeRich(notes);
+
+  // Meta panel: slide kind, source, etc.
+  psMeta.innerHTML = renderSlideMeta(cur);
+}
+
+function renderSlideMeta(slide) {
+  if (!slide) return '<em>—</em>';
+  if (slide.dataset.type === 'question' && currentEpisode) {
+    const q = currentEpisode.questions.find(x => x.id === slide.dataset.qid);
+    if (!q) return '';
+    let parts = [];
+    parts.push(`<strong>${escHtml(formatLabelForType(q.type))}</strong>`);
+    if (q.type === 'two_choice' && Array.isArray(q.options)) {
+      const correct = q.options[q.correct];
+      if (correct) parts.push(`Correct: <strong>${escHtml(correct.text || '')}</strong>${correct.pct != null ? ` (${correct.pct}%)` : ''}`);
+    } else if (q.type === 'over_under') {
+      parts.push(`Anchor: <strong>${q.number}%</strong>, correct: <strong>${q.correct}</strong>${q.actual != null ? `, actual: <strong>${q.actual}%</strong>` : ''}`);
+    } else if (q.type === 'guess_pct') {
+      if (q.answer != null) parts.push(`Answer: <strong>${q.answer}%</strong>`);
+    } else if (q.type === 'name_as_many') {
+      if (Array.isArray(q.answers) && q.answers.length) parts.push(`<strong>${q.answers.length}</strong> answers in list`);
+    } else if (q.type === 'guess_breakdown' && Array.isArray(q.options)) {
+      parts.push(q.options.map(o => `${escHtml(o.label || '')}: <strong>${o.pct}%</strong>`).join(' · '));
+    } else if (q.type === 'ranking' && Array.isArray(q.items)) {
+      parts.push('<strong>Correct order:</strong><br>' + q.items.map((it, i) => `${i + 1}. ${escHtml(it.name || '')}${it.stat ? ` <span style="color:var(--text-muted);">— ${escHtml(it.stat)}</span>` : ''}`).join('<br>'));
+    }
+    if (q.source) parts.push(`<em style="font-style:italic; color:var(--text-muted);">${escHtml(q.source)}</em>`);
+    return parts.join('<br>');
+  }
+  if (slide.dataset.type === 'scores') return '<strong>Scores Slide</strong> — synthetic, will be removed when you advance.';
+  if (slide.dataset.type === 'content' && currentEpisode) {
+    const q = currentEpisode.questions.find(x => x.id === slide.dataset.qid);
+    if (!q) return '';
+    const typeLabel = q.type.replace(/^content_/, '').replace(/_/g, ' ');
+    let parts = [`<strong>Content slide — ${escHtml(typeLabel)}</strong>`];
+    if (q.heading) parts.push(escHtml(q.heading.slice(0, 80)));
+    return parts.join('<br>');
+  }
+  if (slide.dataset.type === 'contestant' && currentEpisode) {
+    const idx = parseInt(slide.dataset.cidx, 10);
+    const c = currentEpisode.contestants && currentEpisode.contestants[idx];
+    if (c) return `<strong>Contestant intro ${idx + 1}</strong>: ${escHtml(c.name)}`;
+  }
+  if (slide.dataset.type === 'static') return '<em style="color:var(--text-muted);">Framing slide</em>';
+  return '';
+}
+
+function renderPresenterScoreboard() {
+  if (!psScoreboard) return;
+  if (!state.scoring || !state.contestants.length) {
+    psScoreboard.innerHTML = '<em style="color:var(--text-muted); font-size:13px;">No contestants — present-only mode.</em>';
+    return;
+  }
+  const maxScore = Math.max(...state.contestants.map(c => c.score));
+  psScoreboard.innerHTML = '';
+  state.contestants.forEach((c, i) => {
+    const isLeading = c.score === maxScore && maxScore > 0;
+    const row = document.createElement('div');
+    row.className = 'sb-row' + (isLeading ? ' leading' : '');
+    row.innerHTML = `
+      <button class="sb-btn minus" data-i="${i}" data-d="-1" title="−1">−</button>
+      <span class="sb-name">${escHtml(c.name)}</span>
+      <span class="sb-pts">${c.score}</span>
+      <button class="sb-btn sb-plus" data-i="${i}" data-d="1" title="+1">+</button>`;
+    psScoreboard.appendChild(row);
+  });
+  psScoreboard.querySelectorAll('.sb-btn').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      adjustScore(parseInt(b.dataset.i, 10), parseInt(b.dataset.d, 10));
+    });
+  });
+}
+
+// Scale all .slide-frame elements to fit the window while preserving 16:9.
+// Frame is fixed at 1280×720 logical pixels; transform:scale makes it fit.
+function scaleFrames() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const scale = Math.min(w / 1280, h / 720);
+  document.querySelectorAll('.slide-frame').forEach(frame => {
+    frame.style.transform = `scale(${scale})`;
+  });
+}
+
+// Re-fit previews + auto-sized text on window resize
+window.addEventListener('resize', () => {
+  if (role === 'presenter') updatePresenterSurface();
+  scaleFrames();
+  fitContestantNames();
+});
+
+// Initial scale
+scaleFrames();
+
+// ╔════════════════════════════════════════════════╗
+// ║ STUDIO                                         ║
+// ╚════════════════════════════════════════════════╝
+const studioEl = document.getElementById('studio');
+const studioContent = document.getElementById('studio-content');
+const studioActions = document.getElementById('studio-actions');
+let editingEp = null;
+let editingQId = null;
+let editorTab = 'questions';
+
+function openStudio() {
+  studioEl.classList.add('visible');
+  showStudioList();
+}
+function closeStudio() {
+  studioEl.classList.remove('visible');
+  if (slides[0] && slides[0].dataset.type === 'picker') showPicker();
+}
+
+function showStudioList() {
+  editingEp = null;
+  const eps = loadEpisodes().map(migrateEpisode);
+  studioActions.innerHTML = `
+    <button class="btn btn-sm" id="st-import">Import</button>
+    <button class="btn btn-sm btn-primary" id="st-new">New Episode</button>
+    <button class="btn btn-sm" id="st-close">Close</button>`;
+  document.getElementById('st-new').onclick = newEpisode;
+  document.getElementById('st-import').onclick = () => document.getElementById('import-file').click();
+  document.getElementById('st-close').onclick = closeStudio;
+
+  const cards = eps.map(ep => `
+    <div class="studio-ep" data-id="${escHtml(ep.id)}">
+      <div class="studio-ep-title">${escHtml(ep.name)}</div>
+      <div class="studio-ep-meta">${ep.questions.length} question${ep.questions.length === 1 ? '' : 's'}</div>
+      <div class="studio-ep-actions">
+        <button class="btn btn-sm" data-act="edit">Edit</button>
+        <button class="btn btn-sm" data-act="duplicate">Duplicate</button>
+        <button class="btn btn-sm" data-act="export">Export</button>
+        <button class="btn btn-sm btn-danger" data-act="delete">Delete</button>
+      </div>
+    </div>`).join('');
+  const demoCard = `
+    <div class="studio-ep" style="border-style:dashed;">
+      <div class="studio-ep-title">Demo Episode</div>
+      <div class="studio-ep-meta">${DEMO_EPISODE.questions.length} questions · built in</div>
+      <div class="studio-ep-actions">
+        <button class="btn btn-sm" data-act="duplicate-demo">Duplicate as new episode</button>
+      </div>
+    </div>`;
+  studioContent.innerHTML = `
+    <div class="section-h">Your Episodes</div>
+    ${eps.length ? `<div class="studio-list-grid">${cards}</div>` : '<p style="color:var(--text-muted); font-style:italic; padding: 20px 0;">No episodes yet. Click "New Episode" to start, or duplicate the demo below.</p>'}
+    <div class="section-h" style="margin-top:36px;">Built-in</div>
+    <div class="studio-list-grid">${demoCard}</div>`;
+
+  studioContent.querySelectorAll('.studio-ep').forEach(card => {
+    card.querySelectorAll('[data-act]').forEach(btn => {
+      btn.onclick = e => {
+        e.stopPropagation();
+        const act = btn.dataset.act;
+        const id = card.dataset.id;
+        if (act === 'duplicate-demo') return duplicateDemoEpisode();
+        if (act === 'edit') return editEpisodeById(id);
+        if (act === 'duplicate') return duplicateEpisodeById(id);
+        if (act === 'export') return exportEpisodeById(id);
+        if (act === 'delete') return deleteEpisodeById(id);
+      };
+    });
+  });
+}
+
+function newEpisode() {
+  const ep = {
+    id: newEpisodeId(),
+    name: 'Untitled Episode',
+    framing: BLANK_FRAMING(),
+    contestants: BLANK_CONTESTANTS(),
+    questions: []
+  };
+  upsertEpisode(ep);
+  editEpisode(ep);
+}
+
+function duplicateDemoEpisode() {
+  const ep = JSON.parse(JSON.stringify(DEMO_EPISODE));
+  ep.id = newEpisodeId();
+  ep.name = 'Copy of Demo Episode';
+  delete ep.isDemo;
+  upsertEpisode(ep);
+  editEpisode(ep);
+}
+
+function duplicateEpisodeById(id) {
+  const orig = getEpisode(id);
+  if (!orig) return;
+  const ep = JSON.parse(JSON.stringify(orig));
+  ep.id = newEpisodeId();
+  ep.name = orig.name + ' (copy)';
+  upsertEpisode(ep);
+  showStudioList();
+}
+
+function deleteEpisodeById(id) {
+  const ep = getEpisode(id);
+  if (!ep) return;
+  if (!confirm(`Delete "${ep.name}"? This cannot be undone.`)) return;
+  deleteEpisode(id);
+  showStudioList();
+}
+
+function exportEpisodeById(id) {
+  const ep = getEpisode(id);
+  if (!ep) return;
+  const data = JSON.stringify(ep, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (ep.name || 'episode').replace(/[^a-z0-9_-]+/gi, '_').toLowerCase() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const ep = JSON.parse(reader.result);
+      if (!ep.id || !ep.name || !Array.isArray(ep.questions)) throw new Error('Invalid episode file.');
+      ep.id = newEpisodeId();
+      ep.name = ep.name + ' (imported)';
+      delete ep.isDemo;
+      if (!ep.framing) ep.framing = BLANK_FRAMING();
+      migrateEpisode(ep);
+      upsertEpisode(ep);
+      if (studioEl.classList.contains('visible')) showStudioList();
+      else showPicker();
+      alert(`Imported "${ep.name}".`);
+    } catch (err) { alert('Could not import file: ' + err.message); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function editEpisodeById(id) {
+  const ep = getEpisode(id);
+  if (!ep) return;
+  editEpisode(ep);
+}
+
+function editEpisode(ep) {
+  editingEp = JSON.parse(JSON.stringify(migrateEpisode(ep)));
+  editingQId = editingEp.questions[0]?.id || null;
+  editorTab = 'questions';
+  renderEditor();
+}
+
+function renderEditor() {
+  studioActions.innerHTML = `
+    <button class="btn btn-sm" id="st-back">← Episodes</button>
+    <button class="btn btn-sm" id="st-play">Play</button>
+    <button class="btn btn-sm btn-primary" id="st-save">Save</button>`;
+  document.getElementById('st-back').onclick = () => {
+    if (confirm('Discard unsaved changes?')) showStudioList();
+  };
+  document.getElementById('st-save').onclick = saveEditor;
+  document.getElementById('st-play').onclick = () => {
+    saveEditor(true);
+    closeStudio();
+    loadEpisodeForPlay(editingEp.id);
+  };
+
+  studioContent.innerHTML = `
+    <div class="editor-header">
+      <input class="editor-name-input" id="ep-name" value="${escHtml(editingEp.name)}" placeholder="Episode name">
+    </div>
+    <div class="editor-tabs">
+      <button class="tab-btn ${editorTab === 'questions' ? 'active' : ''}" data-tab="questions">Questions</button>
+      <button class="tab-btn ${editorTab === 'contestants' ? 'active' : ''}" data-tab="contestants">Contestants</button>
+      <button class="tab-btn ${editorTab === 'framing' ? 'active' : ''}" data-tab="framing">Framing</button>
+    </div>
+    <div class="tab-pane ${editorTab === 'questions' ? 'active' : ''}" id="tab-questions"></div>
+    <div class="tab-pane ${editorTab === 'contestants' ? 'active' : ''}" id="tab-contestants"></div>
+    <div class="tab-pane ${editorTab === 'framing' ? 'active' : ''}" id="tab-framing"></div>`;
+
+  document.getElementById('ep-name').addEventListener('input', e => { editingEp.name = e.target.value; });
+  studioContent.querySelectorAll('.tab-btn').forEach(b => {
+    b.onclick = () => { editorTab = b.dataset.tab; renderEditor(); };
+  });
+
+  if (editorTab === 'questions') renderQuestionsTab();
+  else if (editorTab === 'contestants') renderContestantsTab();
+  else renderFramingTab();
+}
+
+function saveEditor(silent) {
+  if (!editingEp.name || !editingEp.name.trim()) {
+    alert('Please give the episode a name.'); return;
+  }
+  upsertEpisode(editingEp);
+  if (!silent) {
+    const btn = document.getElementById('st-save');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Saved ✓';
+      setTimeout(() => { if (btn) btn.textContent = orig; }, 1200);
+    }
+  }
+}
+
+function renderFramingTab() {
+  const f = editingEp.framing;
+  const tab = document.getElementById('tab-framing');
+  const logoBlock = f.logoUrl
+    ? `<div class="logo-previews">
+         <div class="logo-preview is-light"><span class="logo-preview-label">Light</span><img src="${escHtml(f.logoUrl)}" alt=""></div>
+         <div class="logo-preview is-dark"><span class="logo-preview-label">Dark</span><img src="${escHtml(f.logoUrl)}" alt=""></div>
+       </div>
+       <div class="logo-upload-row" style="margin-top:12px;">
+         <button class="btn btn-sm" id="f-logo-replace">Replace logo</button>
+         <button class="btn btn-sm btn-danger" id="f-logo-remove">Remove logo</button>
+       </div>`
+    : `<div class="logo-upload-row">
+         <button class="btn btn-sm" id="f-logo-upload">Upload logo image</button>
+         <span class="field-hint">PNG, JPG, or SVG. Max 1 MB.</span>
+       </div>`;
+  tab.innerHTML = `
+    <div class="section-h">Logo (optional)</div>
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">Replaces the text wordmark on the title slide. Use a transparent PNG that reads on both light and dark — or skip and the wordmark below is used.</p>
+    ${logoBlock}
+    <input type="file" id="f-logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
+
+    <div class="section-h">Title Wordmark <span style="color:var(--text-muted); font-weight:400; letter-spacing:0.05em;">(used when no logo is uploaded)</span></div>
+    <div class="field">
+      <label>Title text</label>
+      <input id="f-title" value="${escHtml(f.title || '')}" placeholder="Non-Census" maxlength="40">
+      <div class="field-hint">Dashes are auto-colored in the accent. If the title contains a hyphen, the title auto-breaks onto two lines after it (e.g. "Non-Census" → Non- / Census).</div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Tagline</label>
+      <input id="f-tagline" value="${escHtml(f.tagline || '')}" placeholder="Subtitle below the title or logo" maxlength="80">
+    </div>
+
+    <div class="section-h">Closing Slide</div>
+    <div class="field">
+      <label>Close title</label>
+      <textarea id="f-closeTitle" rows="2" maxlength="80">${escHtml(f.closeTitle || '')}</textarea>
+      <div class="field-hint">Shown when there's no scoring; replaced by leaderboard during play. &lt;em&gt;…&lt;/em&gt; supported.</div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Close body (optional)</label>
+      <textarea id="f-closeBody" rows="3" maxlength="300">${escHtml(f.closeBody || '')}</textarea>
+    </div>
+
+    <div class="section-h">Promo Images</div>
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">Generate three promo images for this episode in the show's style — square (Instagram), vertical (Stories), and wide (YouTube/Twitter). All three download immediately on click.</p>
+    <div class="promo-section">
+      <button class="promo-btn" id="f-promo-btn">Generate &amp; download promo pack</button>
+      <div class="promo-status" id="f-promo-status"></div>
+    </div>`;
+  const upd = (id, key, transform) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      let v = el.type === 'checkbox' ? el.checked : el.value;
+      if (transform) v = transform(v);
+      f[key] = v;
+    });
+  };
+  upd('f-title', 'title');
+  upd('f-tagline', 'tagline');
+  upd('f-closeTitle', 'closeTitle');
+  upd('f-closeBody', 'closeBody');
+
+  // Logo handlers
+  const logoInput = document.getElementById('f-logo-input');
+  const triggerUpload = () => logoInput.click();
+  const upBtn = document.getElementById('f-logo-upload');
+  const replaceBtn = document.getElementById('f-logo-replace');
+  const removeBtn = document.getElementById('f-logo-remove');
+  if (upBtn) upBtn.onclick = triggerUpload;
+  if (replaceBtn) replaceBtn.onclick = triggerUpload;
+  if (removeBtn) removeBtn.onclick = () => {
+    if (!confirm('Remove the uploaded logo?')) return;
+    f.logoUrl = null;
+    renderFramingTab();
+  };
+  logoInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const MAX = 1024 * 1024; // 1 MB
+    if (file.size > MAX) {
+      alert(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB — please use one under 1 MB. (Browser storage is limited; large files crowd out other episodes.)`);
+      logoInput.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      f.logoUrl = reader.result; // data: URL
+      renderFramingTab();
+    };
+    reader.onerror = () => alert('Could not read that file.');
+    reader.readAsDataURL(file);
+    logoInput.value = '';
+  });
+
+  // Promo image generator
+  const promoBtn = document.getElementById('f-promo-btn');
+  const promoStatus = document.getElementById('f-promo-status');
+  if (promoBtn) {
+    promoBtn.onclick = async () => {
+      if (typeof html2canvas !== 'function') {
+        promoStatus.textContent = 'Promo renderer is still loading — try again in a moment.';
+        return;
+      }
+      promoBtn.disabled = true;
+      promoStatus.textContent = 'Rendering promo pack…';
+      try {
+        await generatePromoPack(editingEp, msg => { promoStatus.textContent = msg; });
+        promoStatus.textContent = 'Done — three files downloaded.';
+      } catch (err) {
+        console.error('Promo generation failed:', err);
+        promoStatus.textContent = 'Could not generate promo images: ' + (err.message || err);
+      } finally {
+        promoBtn.disabled = false;
+      }
+    };
+  }
+}
+
+// ─── CONTESTANTS TAB ───
+function renderContestantsTab() {
+  const tab = document.getElementById('tab-contestants');
+  if (!editingEp.contestants) editingEp.contestants = [];
+  const cs = editingEp.contestants;
+  tab.innerHTML = `
+    <div class="section-h">Contestants <span style="color:var(--text-muted); font-weight:400; letter-spacing:0.05em;">(shown on dedicated intro slides between the title and questions)</span></div>
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:18px;">Add the players for this episode. Each gets a photo, a name, and a subtext line — credits, a short bio, a joke, whatever sets them up. The Setup screen will preview them before each game.</p>
+    <div class="contestant-edit-list" id="ct-list"></div>
+    <button class="btn-add" id="ct-add">+ Add contestant</button>
+    <input type="file" id="ct-photo-input" accept="image/png,image/jpeg,image/webp" style="display:none">
+  `;
+  renderContestantList();
+  document.getElementById('ct-add').onclick = () => {
+    cs.push({
+      id: 'c_' + Math.random().toString(36).slice(2, 7),
+      name: '', subtext: '', photoUrl: null
+    });
+    renderContestantList();
+  };
+
+  // Photo input — handles uploads for whichever contestant we're targeting.
+  // Photos get downscaled to a square 800x800 JPEG before storage so any input file works.
+  let pendingTargetIdx = -1;
+  const photoInput = document.getElementById('ct-photo-input');
+  photoInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file || pendingTargetIdx < 0) return;
+    // Hard ceiling — anything beyond this is unreasonable for a headshot
+    const HARD_MAX = 20 * 1024 * 1024; // 20 MB
+    if (file.size > HARD_MAX) {
+      alert(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB — please pick one under 20 MB.`);
+      photoInput.value = '';
+      return;
+    }
+    downscaleImageToSquareJpeg(file, 800, 0.85)
+      .then(dataUrl => {
+        cs[pendingTargetIdx].photoUrl = dataUrl;
+        renderContestantList();
+      })
+      .catch(err => alert('Could not process that image: ' + (err.message || err)));
+    photoInput.value = '';
+  });
+
+  function triggerPhotoUpload(idx) {
+    pendingTargetIdx = idx;
+    photoInput.click();
+  }
+
+  function renderContestantList() {
+    const list = document.getElementById('ct-list');
+    if (!cs.length) {
+      list.innerHTML = `<p style="color:var(--text-muted); font-style:italic; padding:14px 0; font-size:13px;">No contestants yet — add at least one to enable scoring on this episode.</p>`;
+      return;
+    }
+    list.innerHTML = cs.map((c, i) => {
+      const photo = c.photoUrl
+        ? `<img class="ct-photo" src="${escHtml(c.photoUrl)}" alt="">`
+        : `<div class="ct-photo ct-photo-empty">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+               <circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6"/>
+             </svg>
+           </div>`;
+      return `<div class="ct-card" data-i="${i}">
+        <div class="ct-photo-col">
+          ${photo}
+          <div class="ct-photo-actions">
+            <button class="btn btn-sm" data-act="upload" data-i="${i}">${c.photoUrl ? 'Replace' : 'Upload photo'}</button>
+            ${c.photoUrl ? `<button class="btn btn-sm btn-danger" data-act="remove-photo" data-i="${i}">Remove</button>` : ''}
+          </div>
+        </div>
+        <div class="ct-fields">
+          <div class="field">
+            <label>Name</label>
+            <input data-ct-name="${i}" value="${escHtml(c.name || '')}" placeholder="Display name" maxlength="32">
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label>Subtext <span style="color:var(--text-muted); font-weight:400; letter-spacing:0.05em; text-transform:none;">— credits, bio, a joke</span></label>
+            <textarea data-ct-subtext="${i}" rows="2" placeholder="A line or two…" maxlength="200">${escHtml(c.subtext || '')}</textarea>
+            <div class="field-hint">Use &lt;em&gt;…&lt;/em&gt; for emphasis, &lt;br&gt; for line break.</div>
+          </div>
+          <div class="ct-row-actions">
+            <button class="btn btn-sm" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn btn-sm" data-act="down" data-i="${i}" ${i === cs.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn btn-sm btn-danger" data-act="delete" data-i="${i}">Delete</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Wire up name/subtext inputs (live update)
+    list.querySelectorAll('[data-ct-name]').forEach(inp => {
+      inp.addEventListener('input', () => { cs[parseInt(inp.dataset.ctName, 10)].name = inp.value; });
+    });
+    list.querySelectorAll('[data-ct-subtext]').forEach(ta => {
+      ta.addEventListener('input', () => { cs[parseInt(ta.dataset.ctSubtext, 10)].subtext = ta.value; });
+    });
+    // Wire up action buttons
+    list.querySelectorAll('[data-act]').forEach(btn => {
+      btn.onclick = () => {
+        const i = parseInt(btn.dataset.i, 10);
+        const act = btn.dataset.act;
+        if (act === 'upload') return triggerPhotoUpload(i);
+        if (act === 'remove-photo') {
+          if (!confirm('Remove this contestant\'s photo?')) return;
+          cs[i].photoUrl = null;
+          renderContestantList();
+          return;
+        }
+        if (act === 'up' && i > 0) {
+          [cs[i - 1], cs[i]] = [cs[i], cs[i - 1]];
+          renderContestantList();
+          return;
+        }
+        if (act === 'down' && i < cs.length - 1) {
+          [cs[i + 1], cs[i]] = [cs[i], cs[i + 1]];
+          renderContestantList();
+          return;
+        }
+        if (act === 'delete') {
+          if (!confirm(`Delete "${cs[i].name || 'contestant ' + (i + 1)}"?`)) return;
+          cs.splice(i, 1);
+          renderContestantList();
+          return;
+        }
+      };
+    });
+  }
+}
+
+function renderQuestionsTab() {
+  const tab = document.getElementById('tab-questions');
+  tab.innerHTML = `
+    <div class="q-tab-layout">
+      <div class="q-list-wrap">
+        <div class="q-list-header"><h4>Slides (${editingEp.questions.length})</h4></div>
+        <div class="q-list" id="q-list"></div>
+        <div class="q-list-add-group">
+          <div class="q-list-add-label">Question slides</div>
+          <div class="q-list-add">
+            <button class="btn btn-sm" data-add="two_choice">+ Two Choice</button>
+            <button class="btn btn-sm" data-add="over_under">+ Over/Under</button>
+            <button class="btn btn-sm" data-add="guess_pct">+ Guess %</button>
+            <button class="btn btn-sm" data-add="name_as_many">+ Name as Many</button>
+            <button class="btn btn-sm" data-add="guess_breakdown">+ Breakdown</button>
+            <button class="btn btn-sm" data-add="ranking">+ Ranking</button>
+            <button class="btn btn-sm" data-add="guess_data">+ Guess the Data</button>
+            <button class="btn btn-sm" data-add="tiebreaker">+ Tiebreaker</button>
+          </div>
+          <div class="q-list-add-label" style="margin-top:10px;">Content slides</div>
+          <div class="q-list-add">
+            <button class="btn btn-sm" data-add="content_heading_text">+ Heading + Text</button>
+            <button class="btn btn-sm" data-add="content_heading_image_text">+ Heading + Image + Text</button>
+            <button class="btn btn-sm" data-add="content_image">+ Image only</button>
+          </div>
+        </div>
+      </div>
+      <div class="q-editor" id="q-editor"></div>
+    </div>`;
+  renderQuestionList();
+  renderQuestionEditor();
+  tab.querySelectorAll('[data-add]').forEach(b => {
+    b.onclick = () => addQuestion(b.dataset.add);
+  });
+}
+
+function renderQuestionList() {
+  const list = document.getElementById('q-list');
+  if (!list) return;
+  if (!editingEp.questions.length) {
+    list.innerHTML = '<p style="color:var(--text-muted); font-style:italic; padding:14px 4px; font-size:13px;">No slides yet. Add one below.</p>';
+    return;
+  }
+  list.innerHTML = editingEp.questions.map((q, i) => {
+    // For content slides the "preview text" is heading or text body
+    const previewText = isContentType(q.type)
+      ? (q.heading || q.text || '(empty)')
+      : (q.text || '(no text)');
+    const typeLabel = isContentType(q.type)
+      ? q.type.replace(/^content_/, '').replace(/_/g, ' ')
+      : q.type.replace(/_/g, ' ');
+    return `<div class="q-list-item ${q.id === editingQId ? 'active' : ''}${isContentType(q.type) ? ' is-content' : ''}" draggable="true" data-id="${escHtml(q.id)}" data-i="${i}">
+      <span class="q-grip" title="Drag to reorder">⋮⋮</span>
+      <span class="q-list-num">${i + 1}</span>
+      <span class="q-list-text">${escHtml(previewText.slice(0, 40))}</span>
+      <span class="q-list-type">${typeLabel}</span>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.q-list-item').forEach(item => {
+    item.addEventListener('click', () => {
+      editingQId = item.dataset.id;
+      renderQuestionList();
+      renderQuestionEditor();
+    });
+    item.addEventListener('dragstart', e => {
+      item.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', item.dataset.i);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', e => {
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const to = parseInt(item.dataset.i, 10);
+      if (isNaN(from) || isNaN(to) || from === to) return;
+      const [moved] = editingEp.questions.splice(from, 1);
+      editingEp.questions.splice(to, 0, moved);
+      renderQuestionList();
+    });
+  });
+}
+
+function addQuestion(type) {
+  const q = makeBlankQuestion(type);
+  editingEp.questions.push(q);
+  editingQId = q.id;
+  renderQuestionList();
+  renderQuestionEditor();
+}
+
+function makeBlankQuestion(type) {
+  const id = 'q_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const base = { id, type, text: '' };
+  switch (type) {
+    case 'two_choice': return { ...base, label: '', options: [{ text: '', pct: null }, { text: '', pct: null }], correct: 0 };
+    case 'over_under': return { ...base, number: 50, correct: 'over', actual: null, note: '' };
+    case 'guess_pct': return { ...base, answer: null, note: '', source: '' };
+    case 'name_as_many': return { ...base, prompt: '', answers: [], statLine: '', revealList: true, source: '' };
+    case 'guess_breakdown': return { ...base, options: [{ label: '', pct: null }, { label: '', pct: null }], source: '' };
+    case 'ranking': return { ...base, items: [{ name: '', stat: '' }, { name: '', stat: '' }, { name: '', stat: '' }], source: '' };
+    case 'guess_data': return { ...base, text: '', answer: '', chartData: [] };
+    case 'tiebreaker': return { ...base, text: '', answer: null, unit: '' };
+    case 'content_heading_text': return { id, type, heading: '', text: '', center: false, host_notes: '' };
+    case 'content_heading_image_text': return { id, type, heading: '', text: '', imageUrl: null, imageSide: 'left', host_notes: '' };
+    case 'content_image': return { id, type, imageUrl: null, host_notes: '' };
+  }
+  return base;
+}
+
+function renderQuestionEditor() {
+  const ed = document.getElementById('q-editor');
+  if (!ed) return;
+  const q = editingEp.questions.find(x => x.id === editingQId);
+  if (!q) {
+    ed.innerHTML = `<div class="q-editor-empty">Pick a slide on the left, or add a new one below.</div>`;
+    return;
+  }
+  const isContent = isContentType(q.type);
+
+  let body = '';
+  if (isContent) {
+    body = editorContent(q);
+  } else {
+    switch (q.type) {
+      case 'two_choice': body = editorTwoChoice(q); break;
+      case 'over_under': body = editorOverUnder(q); break;
+      case 'guess_pct': body = editorGuessPct(q); break;
+      case 'name_as_many': body = editorNameAsMany(q); break;
+      case 'guess_breakdown': body = editorGuessBreakdown(q); break;
+      case 'ranking': body = editorRanking(q); break;
+      case 'guess_data': body = editorGuessData(q); break;
+      case 'tiebreaker': body = editorTiebreaker(q); break;
+    }
+  }
+
+  const typeLabel = isContent
+    ? q.type.replace(/^content_/, '').replace(/_/g, ' ')
+    : q.type.replace(/_/g, ' ');
+
+  // Question slides get the "Format label" + "Question text" + "Host notes" common fields.
+  // Content slides skip those and provide their own fields inside `body`.
+  const commonFields = isContent ? '' : `
+    <div class="field">
+      <label>Question text</label>
+      <textarea id="qe-text" rows="2" placeholder="The main prompt shown on the slide…" maxlength="160">${escHtml(q.text || '')}</textarea>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Host notes <span style="color:var(--text-muted); font-weight:400; letter-spacing:0.05em; text-transform:none;">— shown only on the presenter screen</span></label>
+      <textarea id="qe-host-notes" rows="3" placeholder="Things to say, set-up, trivia for after the reveal…">${escHtml(q.host_notes || '')}</textarea>
+      <div class="field-hint">Use &lt;em&gt;…&lt;/em&gt;, &lt;strong&gt;…&lt;/strong&gt;, or &lt;br&gt; for emphasis. Never appears on the audience screen.</div>
+    </div>
+    <div class="section-h">Type-specific fields</div>`;
+
+  ed.innerHTML = `
+    <div class="q-editor-bar">
+      <div class="q-type-pill">${typeLabel}</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sm" data-act="up">↑</button>
+        <button class="btn btn-sm" data-act="down">↓</button>
+        <button class="btn btn-sm btn-danger" data-act="delete">Delete</button>
+      </div>
+    </div>
+    ${commonFields}
+    ${body}`;
+
+  if (!isContent) {
+    document.getElementById('qe-text').addEventListener('input', e => { q.text = e.target.value; renderQuestionList(); });
+    document.getElementById('qe-host-notes').addEventListener('input', e => { q.host_notes = e.target.value; });
+  }
+  ed.querySelectorAll('[data-act]').forEach(b => {
+    b.onclick = () => {
+      const idx = editingEp.questions.findIndex(x => x.id === q.id);
+      if (b.dataset.act === 'up' && idx > 0) {
+        [editingEp.questions[idx - 1], editingEp.questions[idx]] = [editingEp.questions[idx], editingEp.questions[idx - 1]];
+      } else if (b.dataset.act === 'down' && idx < editingEp.questions.length - 1) {
+        [editingEp.questions[idx + 1], editingEp.questions[idx]] = [editingEp.questions[idx], editingEp.questions[idx + 1]];
+      } else if (b.dataset.act === 'delete') {
+        if (!confirm('Delete this slide?')) return;
+        editingEp.questions.splice(idx, 1);
+        editingQId = editingEp.questions[Math.min(idx, editingEp.questions.length - 1)]?.id || null;
+      }
+      renderQuestionList();
+      renderQuestionEditor();
+    };
+  });
+
+  attachTypeListeners(q);
+}
+
+function editorTwoChoice(q) {
+  return `
+    <div class="field-grid cols-2">
+      ${q.options.map((o, i) => `
+        <div class="field">
+          <label>Option ${String.fromCharCode(65 + i)}</label>
+          <input data-opt-text="${i}" value="${escHtml(o.text || '')}" placeholder="Text shown to players" maxlength="60">
+          <input data-opt-pct="${i}" type="number" step="0.1" value="${o.pct ?? ''}" placeholder="Percentage" style="margin-top:6px;">
+        </div>`).join('')}
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Correct option</label>
+      <select id="qe-correct">
+        ${q.options.map((_, i) => `<option value="${i}" ${q.correct === i ? 'selected' : ''}>Option ${String.fromCharCode(65 + i)}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function editorOverUnder(q) {
+  return `
+    <div class="field-grid cols-2">
+      <div class="field">
+        <label>Baseline number (shown pre-reveal, %)</label>
+        <input id="qe-number" type="number" step="0.1" value="${q.number ?? ''}" placeholder="e.g. 40">
+      </div>
+      <div class="field">
+        <label>Correct answer</label>
+        <select id="qe-correct">
+          <option value="over" ${q.correct === 'over' ? 'selected' : ''}>Over</option>
+          <option value="under" ${q.correct === 'under' ? 'selected' : ''}>Under</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Actual answer (% shown on reveal, scratched over baseline)</label>
+      <input id="qe-actual" type="number" step="0.1" value="${q.actual ?? ''}" placeholder="e.g. 42">
+    </div>`;
+}
+
+function editorGuessPct(q) {
+  return `
+    <div class="field-grid cols-2">
+      <div class="field">
+        <label>Answer (%)</label>
+        <input id="qe-answer" type="number" step="0.1" value="${q.answer ?? ''}">
+      </div>
+      <div class="field">
+        <label>Source / context note</label>
+        <input id="qe-source" value="${escHtml(q.source || '')}" placeholder="e.g. 2012 NSF survey, n=2,200">
+      </div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Reveal note (optional, longer)</label>
+      <textarea id="qe-note" rows="2">${escHtml(q.note || '')}</textarea>
+    </div>`;
+}
+
+function editorNameAsMany(q) {
+  const ans = q.answers || [];
+  return `
+    <div class="field">
+      <label>Sub-prompt (small text above the answers)</label>
+      <input id="qe-prompt" value="${escHtml(q.prompt || '')}" placeholder="e.g. Donald Trump received 1%. Name any response that received higher.">
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Stat line (large bold callout shown on reveal)</label>
+      <textarea id="qe-statLine" rows="2" placeholder="e.g. There are <em>23</em> valid answers. Most groups name <em>8</em>.">${escHtml(q.statLine || '')}</textarea>
+    </div>
+    <div class="field-row" style="margin-top:10px;">
+      <input type="checkbox" id="qe-revealList" ${q.revealList !== false ? 'checked' : ''}>
+      <label for="qe-revealList">Show full answer list on reveal</label>
+    </div>
+    <div class="section-h" style="margin-top:18px;">Answer list</div>
+    <div id="qe-answers">
+      ${ans.map((a, i) => {
+        const text = typeof a === 'string' ? a : (a.text || '');
+        const pct = typeof a === 'object' && a.pct != null ? a.pct : '';
+        return `<div class="option-row" data-i="${i}">
+          <input data-ans-text="${i}" value="${escHtml(text)}" placeholder="Answer text" maxlength="40">
+          <input data-ans-pct="${i}" type="number" step="0.1" value="${escHtml(pct)}" placeholder="% (opt)">
+          <button class="btn-x" data-ans-del="${i}" title="Remove">×</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="btn-add" id="qe-add-answer">+ Add answer</button>
+    <div class="field" style="margin-top:14px;">
+      <label>Source / context note</label>
+      <input id="qe-source" value="${escHtml(q.source || '')}" placeholder="e.g. 1999 Princeton Survey, n=1,400">
+    </div>`;
+}
+
+function editorGuessBreakdown(q) {
+  return `
+    <div id="qe-breakdown">
+      ${q.options.map((o, i) => `
+        <div class="option-row" data-i="${i}">
+          <input data-br-label="${i}" value="${escHtml(o.label || '')}" placeholder="Category (e.g. Diagonal)" maxlength="40">
+          <input data-br-pct="${i}" type="number" step="0.1" value="${o.pct ?? ''}" placeholder="%">
+          <button class="btn-x" data-br-del="${i}" title="Remove">×</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn-add" id="qe-add-breakdown">+ Add row</button>
+    <div class="field" style="margin-top:14px;">
+      <label>Source / context note</label>
+      <input id="qe-source" value="${escHtml(q.source || '')}" placeholder="e.g. 2025 YouGov poll">
+    </div>`;
+}
+
+function editorRanking(q) {
+  return `
+    <p style="color:var(--text-muted); font-size:12px; margin-bottom:10px;">List items in the <em>correct</em> order (1st to last). Reveal will show them in this order with their stats.</p>
+    <div id="qe-rank">
+      ${q.items.map((it, i) => `
+        <div class="option-row" data-i="${i}" style="grid-template-columns: 1fr 1fr auto;">
+          <input data-rk-name="${i}" value="${escHtml(it.name || '')}" placeholder="Item name" maxlength="40">
+          <input data-rk-stat="${i}" value="${escHtml(it.stat || '')}" placeholder="Stat (e.g. 78% acceptable)" maxlength="40">
+          <button class="btn-x" data-rk-del="${i}" title="Remove">×</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn-add" id="qe-add-rank">+ Add item</button>
+    <div class="field" style="margin-top:14px;">
+      <label>Source / context note</label>
+      <input id="qe-source" value="${escHtml(q.source || '')}">
+    </div>`;
+}
+
+// ─── CONTENT SLIDE EDITOR ───
+function editorTiebreaker(q) {
+  return `
+    <div class="field-hint" style="margin-bottom:14px; font-size:13px; color:var(--text-muted);">
+      Closest guess wins. The answer appears on reveal — no scoring, host decides the winner.
+    </div>
+    <div class="field-grid cols-2">
+      <div class="field">
+        <label>Answer (the number)</label>
+        <input id="qe-tb-answer" type="number" step="any" value="${q.answer ?? ''}" placeholder="e.g. 42">
+      </div>
+      <div class="field">
+        <label>Unit (optional)</label>
+        <input id="qe-tb-unit" value="${escHtml(q.unit || '')}" placeholder="e.g. % or years or km">
+      </div>
+    </div>`;
+}
+
+function editorGuessData(q) {
+  const rows = q.chartData || [];
+  return `
+    <div class="field-hint" style="margin-bottom:14px; font-size:13px; color:var(--text-muted);">
+      Use <code>___</code> in the question text to mark the blank. The answer appears as a large reveal.
+    </div>
+    <div class="field">
+      <label>Answer (revealed on click)</label>
+      <input id="qe-gd-answer" value="${escHtml(q.answer || '')}" placeholder="e.g. children" maxlength="60">
+    </div>
+    <div class="section-h" style="margin-top:18px;">Bar Chart Data</div>
+    <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Each row is one bar. Label appears below the bar, value is the bar height (use %).</p>
+    <div id="qe-gd-rows">
+      ${rows.map((r, i) => `
+        <div class="option-row" data-i="${i}" style="grid-template-columns: 1.2fr 1fr auto;">
+          <input data-gd-label="${i}" value="${escHtml(r.label || '')}" placeholder="Label (e.g. 2 children)">
+          <input data-gd-value="${i}" type="number" min="0" max="100" step="0.1" value="${r.value ?? ''}" placeholder="Value (e.g. 28)">
+          <button class="btn-x" data-gd-del="${i}" title="Remove row">×</button>
+        </div>`).join('')}
+    </div>
+    <button class="btn-add" id="qe-gd-add-row">+ Add bar</button>
+  `;
+}
+
+function editorContent(q) {
+  const headingField = `
+    <div class="field">
+      <label>Heading</label>
+      <input data-cf-heading value="${escHtml(q.heading || '')}" placeholder="The big title for this slide…">
+      <div class="field-hint">Use &lt;em&gt;…&lt;/em&gt; for accent color.</div>
+    </div>`;
+  const textField = `
+    <div class="field" style="margin-top:14px;">
+      <label>Body text</label>
+      <textarea data-cf-text rows="5" placeholder="Body text. Blank lines start new paragraphs.">${escHtml(q.text || '')}</textarea>
+      <div class="field-hint">Use &lt;em&gt;…&lt;/em&gt;, &lt;strong&gt;…&lt;/strong&gt;, or &lt;br&gt;. Blank lines separate paragraphs.</div>
+    </div>`;
+  const centerField = `
+    <div class="field-row" style="margin-top:10px;">
+      <input type="checkbox" data-cf-center ${q.center ? 'checked' : ''}>
+      <label>Center the text on the slide</label>
+    </div>`;
+  const imageBlock = (() => {
+    const hasImage = !!q.imageUrl;
+    return `
+      <div class="section-h">Image</div>
+      <div class="ct-photo-col" style="flex-direction:row; align-items:center; gap:18px;">
+        ${hasImage
+          ? `<img src="${escHtml(q.imageUrl)}" style="max-width:200px; max-height:160px; object-fit:contain; border:1px solid var(--border); background: var(--surface-2);">`
+          : `<div style="width:200px; height:120px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-style:italic; font-size:13px;">No image</div>`
+        }
+        <div class="ct-photo-actions" style="width:auto; flex-direction:column; gap:6px;">
+          <button class="btn btn-sm" data-cf-img-upload>${hasImage ? 'Replace' : 'Upload image'}</button>
+          ${hasImage ? `<button class="btn btn-sm btn-danger" data-cf-img-remove>Remove</button>` : ''}
+        </div>
+      </div>
+      <input type="file" id="cf-image-input" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+    `;
+  })();
+  const sideField = `
+    <div class="field" style="margin-top:14px;">
+      <label>Image position</label>
+      <select data-cf-imageside>
+        <option value="left" ${q.imageSide === 'left' || !q.imageSide ? 'selected' : ''}>Image on left</option>
+        <option value="right" ${q.imageSide === 'right' ? 'selected' : ''}>Image on right</option>
+      </select>
+    </div>`;
+
+  let body = '';
+  if (q.type === 'content_heading_text') {
+    body = `${headingField}${textField}${centerField}`;
+  } else if (q.type === 'content_heading_image_text') {
+    body = `${headingField}${textField}${imageBlock}${sideField}`;
+  } else if (q.type === 'content_image') {
+    body = imageBlock;
+  }
+  const hostNotes = `
+    <div class="field" style="margin-top:18px;">
+      <label>Host notes <span style="color:var(--text-muted); font-weight:400; letter-spacing:0.05em; text-transform:none;">— shown only on the presenter screen</span></label>
+      <textarea data-cf-host rows="3" placeholder="Things to say, transitions, segues…">${escHtml(q.host_notes || '')}</textarea>
+      <div class="field-hint">Use &lt;em&gt;…&lt;/em&gt;, &lt;strong&gt;…&lt;/strong&gt;, or &lt;br&gt;. Never shown on the audience screen.</div>
+    </div>`;
+  return body + hostNotes;
+}
+
+function attachContentEditorListeners(q) {
+  const heading = document.querySelector('[data-cf-heading]');
+  if (heading) heading.addEventListener('input', e => { q.heading = e.target.value; renderQuestionList(); });
+  const text = document.querySelector('[data-cf-text]');
+  if (text) text.addEventListener('input', e => { q.text = e.target.value; renderQuestionList(); });
+  const center = document.querySelector('[data-cf-center]');
+  if (center) center.addEventListener('change', e => { q.center = e.target.checked; });
+  const imgSide = document.querySelector('[data-cf-imageside]');
+  if (imgSide) imgSide.addEventListener('change', e => { q.imageSide = e.target.value; });
+  const host = document.querySelector('[data-cf-host]');
+  if (host) host.addEventListener('input', e => { q.host_notes = e.target.value; });
+
+  // Image upload (if applicable)
+  const imgInput = document.getElementById('cf-image-input');
+  const upBtn = document.querySelector('[data-cf-img-upload]');
+  const rmBtn = document.querySelector('[data-cf-img-remove]');
+  if (upBtn && imgInput) {
+    upBtn.onclick = e => { e.preventDefault(); imgInput.click(); };
+    imgInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const HARD_MAX = 20 * 1024 * 1024; // 20 MB
+      if (file.size > HARD_MAX) {
+        alert(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB — please pick one under 20 MB.`);
+        imgInput.value = '';
+        return;
+      }
+      // Content slide images are downscaled to 1280 max-dimension JPEG
+      // (preserves aspect ratio rather than cropping square like contestant photos)
+      downscaleImageContain(file, 1280, 0.85)
+        .then(dataUrl => {
+          q.imageUrl = dataUrl;
+          renderQuestionEditor();
+        })
+        .catch(err => alert('Could not process that image: ' + (err.message || err)));
+      imgInput.value = '';
+    });
+  }
+  if (rmBtn) {
+    rmBtn.onclick = e => {
+      e.preventDefault();
+      if (!confirm('Remove this image?')) return;
+      q.imageUrl = null;
+      renderQuestionEditor();
+    };
+  }
+}
+
+// ─── PROMO IMAGE GENERATOR ───
+// Builds three promo images for an episode in the show's RAW style and downloads them.
+// Renders offscreen, captures with html2canvas, and triggers a save per-size.
+function buildPromoHTML(ep, size) {
+  const f = ep.framing || {};
+  const contestants = (ep.contestants || []).filter(c => c.name && c.name.trim());
+  // Wordmark — same splat treatment as the title slide
+  const t = (f.title || 'NON-CENSUS').trim();
+  const splatize = s => escHtml(s).replace(/-/g, '<span class="splat">—</span>');
+  const dashIdx = t.indexOf('-');
+  let wm;
+  if (dashIdx > 0 && dashIdx < t.length - 1) {
+    wm = splatize(t.slice(0, dashIdx + 1)) + '<br>' + splatize(t.slice(dashIdx + 1));
+  } else {
+    wm = splatize(t);
+  }
+  // Contestant blocks
+  const photoSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>`;
+  const contestantHtml = contestants.length === 0
+    ? ''
+    : contestants.map((c, i) => {
+        const photo = c.photoUrl
+          ? `<img class="promo-contestant-photo" src="${escHtml(c.photoUrl)}" alt="">`
+          : `<div class="promo-contestant-photo promo-contestant-photo-empty">${photoSvg}</div>`;
+        return `<div class="promo-contestant">
+          <div class="promo-contestant-photo-wrap">${photo}</div>
+          <div class="promo-contestant-name">${escHtml(c.name)}</div>
+        </div>`;
+      }).join(contestants.length === 2 ? `<div class="promo-vs">vs.</div>` : '');
+  // Title for the episode
+  const epTitle = ep.name && ep.name.trim() && ep.name !== 'Untitled Episode'
+    ? `<div class="promo-episode-title">${safeRich(ep.name)}</div>`
+    : '';
+  // Decoration: sparks, tape, and bottom torn band
+  const chrome = `
+    <span class="promo-spark tl">✸</span>
+    <span class="promo-spark br">✸</span>
+    <span class="promo-tape tr"></span>
+    <span class="promo-tape bl"></span>`;
+  return `<div class="promo ${size}">
+    ${chrome}
+    <div class="promo-wordmark">${wm}</div>
+    ${epTitle}
+    ${contestantHtml ? `<div class="promo-contestants">${contestantHtml}</div>` : ''}
+  </div>`;
+}
+
+function downloadDataURL(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function slugifyForFilename(s) {
+  return String(s || 'episode').trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'episode';
+}
+
+async function generatePromoPack(ep, statusFn) {
+  const sizes = [
+    { key: 'square', label: 'square (1080×1080)', w: 1080, h: 1080 },
+    { key: 'story',  label: 'story (1080×1920)',  w: 1080, h: 1920 },
+    { key: 'wide',   label: 'wide (1920×1080)',   w: 1920, h: 1080 },
+  ];
+  const slug = slugifyForFilename(ep.name);
+
+  // Render each size, capture, download. Done sequentially so the offscreen container
+  // stays predictable and we don't blow memory on three giant canvases at once.
+  for (let i = 0; i < sizes.length; i++) {
+    const s = sizes[i];
+    if (statusFn) statusFn(`Rendering ${s.label} (${i + 1}/${sizes.length})…`);
+    // Build offscreen host
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed; left:-99999px; top:0; pointer-events:none; z-index:-1;';
+    host.innerHTML = buildPromoHTML(ep, s.key);
+    document.body.appendChild(host);
+    try {
+      // Wait one frame so any images inside (contestant photos) start loading
+      await new Promise(r => requestAnimationFrame(r));
+      // Wait for any <img> children to fully load before snapshotting
+      const imgs = Array.from(host.querySelectorAll('img'));
+      await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(r => {
+        img.addEventListener('load', r); img.addEventListener('error', r);
+      })));
+      // Wait for fonts
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      // Capture
+      const canvas = await html2canvas(host.firstElementChild, {
+        backgroundColor: null,
+        width: s.w, height: s.h,
+        scale: 1,
+        useCORS: true,
+        logging: false,
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      downloadDataURL(dataUrl, `non-census-${slug}-${s.key}.png`);
+      // Tiny pause between downloads so the browser doesn't bunch them up
+      await new Promise(r => setTimeout(r, 250));
+    } finally {
+      document.body.removeChild(host);
+    }
+  }
+}
+
+// Downscale image preserving aspect ratio (max-dimension version, for content-slide images).
+function downscaleImageContain(file, maxDim = 1280, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file.type || !file.type.startsWith('image/')) {
+      return reject(new Error('Not an image file.'));
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not decode image.'));
+      img.onload = () => {
+        try {
+          let w = img.naturalWidth, h = img.naturalHeight;
+          const scale = Math.min(1, maxDim / Math.max(w, h));
+          w = Math.round(w * scale); h = Math.round(h * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch (err) { reject(err); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function attachTypeListeners(q) {
+  if (isContentType(q.type)) { attachContentEditorListeners(q); return; }
+  if (q.type === 'two_choice') {
+    document.querySelectorAll('[data-opt-text]').forEach(inp => {
+      inp.addEventListener('input', () => { q.options[parseInt(inp.dataset.optText, 10)].text = inp.value; });
+    });
+    document.querySelectorAll('[data-opt-pct]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const v = inp.value === '' ? null : parseFloat(inp.value);
+        q.options[parseInt(inp.dataset.optPct, 10)].pct = v;
+      });
+    });
+    document.getElementById('qe-correct').addEventListener('change', e => { q.correct = parseInt(e.target.value, 10); });
+  }
+  if (q.type === 'over_under') {
+    document.getElementById('qe-number').addEventListener('input', e => { q.number = e.target.value === '' ? null : parseFloat(e.target.value); });
+    document.getElementById('qe-correct').addEventListener('change', e => { q.correct = e.target.value; });
+    document.getElementById('qe-actual').addEventListener('input', e => { q.actual = e.target.value === '' ? null : parseFloat(e.target.value); });
+  }
+  if (q.type === 'guess_pct') {
+    document.getElementById('qe-answer').addEventListener('input', e => { q.answer = e.target.value === '' ? null : parseFloat(e.target.value); });
+    document.getElementById('qe-source').addEventListener('input', e => { q.source = e.target.value; });
+    document.getElementById('qe-note').addEventListener('input', e => { q.note = e.target.value; });
+  }
+  if (q.type === 'name_as_many') {
+    document.getElementById('qe-prompt').addEventListener('input', e => { q.prompt = e.target.value; });
+    document.getElementById('qe-statLine').addEventListener('input', e => { q.statLine = e.target.value; });
+    document.getElementById('qe-revealList').addEventListener('change', e => { q.revealList = e.target.checked; });
+    document.getElementById('qe-source').addEventListener('input', e => { q.source = e.target.value; });
+    document.querySelectorAll('[data-ans-text]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.ansText, 10);
+        const cur = q.answers[i];
+        if (typeof cur === 'string') q.answers[i] = { text: inp.value };
+        else q.answers[i] = { ...cur, text: inp.value };
+      });
+    });
+    document.querySelectorAll('[data-ans-pct]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.ansPct, 10);
+        const v = inp.value === '' ? null : parseFloat(inp.value);
+        const cur = q.answers[i];
+        if (typeof cur === 'string') q.answers[i] = { text: cur, pct: v };
+        else q.answers[i] = { ...cur, pct: v };
+      });
+    });
+    document.querySelectorAll('[data-ans-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        q.answers.splice(parseInt(btn.dataset.ansDel, 10), 1);
+        renderQuestionEditor();
+      });
+    });
+    document.getElementById('qe-add-answer').addEventListener('click', () => {
+      q.answers.push({ text: '', pct: null });
+      renderQuestionEditor();
+    });
+  }
+  if (q.type === 'guess_breakdown') {
+    document.getElementById('qe-source').addEventListener('input', e => { q.source = e.target.value; });
+    document.querySelectorAll('[data-br-label]').forEach(inp => {
+      inp.addEventListener('input', () => { q.options[parseInt(inp.dataset.brLabel, 10)].label = inp.value; });
+    });
+    document.querySelectorAll('[data-br-pct]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.brPct, 10);
+        q.options[i].pct = inp.value === '' ? null : parseFloat(inp.value);
+      });
+    });
+    document.querySelectorAll('[data-br-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        q.options.splice(parseInt(btn.dataset.brDel, 10), 1);
+        renderQuestionEditor();
+      });
+    });
+    document.getElementById('qe-add-breakdown').addEventListener('click', () => {
+      q.options.push({ label: '', pct: null });
+      renderQuestionEditor();
+    });
+  }
+  if (q.type === 'ranking') {    document.getElementById('qe-source').addEventListener('input', e => { q.source = e.target.value; });
+    document.querySelectorAll('[data-rk-name]').forEach(inp => {
+      inp.addEventListener('input', () => { q.items[parseInt(inp.dataset.rkName, 10)].name = inp.value; });
+    });
+    document.querySelectorAll('[data-rk-stat]').forEach(inp => {
+      inp.addEventListener('input', () => { q.items[parseInt(inp.dataset.rkStat, 10)].stat = inp.value; });
+    });
+    document.querySelectorAll('[data-rk-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        q.items.splice(parseInt(btn.dataset.rkDel, 10), 1);
+        renderQuestionEditor();
+      });
+    });
+    document.getElementById('qe-add-rank').addEventListener('click', () => {
+      q.items.push({ name: '', stat: '' });
+      renderQuestionEditor();
+    });
+  }
+  if (q.type === 'guess_data') {
+    const answerInput = document.getElementById('qe-gd-answer');
+    if (answerInput) answerInput.addEventListener('input', e => { q.answer = e.target.value; });
+
+    document.querySelectorAll('[data-gd-label]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.gdLabel, 10);
+        if (!q.chartData[i]) q.chartData[i] = {};
+        q.chartData[i].label = inp.value;
+      });
+    });
+    document.querySelectorAll('[data-gd-value]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.gdValue, 10);
+        if (!q.chartData[i]) q.chartData[i] = {};
+        q.chartData[i].value = inp.value === '' ? 0 : parseFloat(inp.value);
+      });
+    });
+    document.querySelectorAll('[data-gd-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        q.chartData.splice(parseInt(btn.dataset.gdDel, 10), 1);
+        renderQuestionEditor();
+      });
+    });
+    const addBtn = document.getElementById('qe-gd-add-row');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      if (!q.chartData) q.chartData = [];
+      q.chartData.push({ label: '', value: 0 });
+      renderQuestionEditor();
+    });
+  }
+  if (q.type === 'tiebreaker') {
+    const ans = document.getElementById('qe-tb-answer');
+    const unit = document.getElementById('qe-tb-unit');
+    if (ans) ans.addEventListener('input', e => { q.answer = e.target.value === '' ? null : parseFloat(e.target.value); });
+    if (unit) unit.addEventListener('input', e => { q.unit = e.target.value; });
+  }
+}
+
+// ╔════════════════════════════════════════════════╗
+// ║ INIT                                           ║
+// ╚════════════════════════════════════════════════╝
+showPicker();
+</script>
+</body>
+</html>
