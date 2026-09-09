@@ -696,31 +696,31 @@ body::before {
   position: absolute;
   left: var(--rx, 50%); top: var(--ry, 50%);
   transform: translate(-50%, -50%) rotate(var(--rrot, 0deg));
-  padding: 10px 16px;
+  padding: 7px 10px;
   border: 3px solid var(--ink);
   background: #fff;
   box-shadow: 3px 3px 0 var(--ink);
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
-  max-width: 200px;
+  max-width: 115px;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .q-rank-tile-name {
-  font-family: var(--display); font-size: 20px; font-weight: 400;
+  font-family: var(--display); font-size: 15px; font-weight: 400;
   color: var(--ink); text-transform: uppercase;
   letter-spacing: -0.01em; line-height: 1.1;
   overflow-wrap: break-word;
 }
 .q-rank-tile-stat {
-  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
   color: var(--red); margin-top: 3px; letter-spacing: 0.04em;
 }
 /* Compact for 7+ items — slightly smaller so 9 items fit */
 .q-rank-stage[data-many="true"] .q-rank-tile {
-  padding: 8px 12px; max-width: 210px;
+  padding: 6px 9px; max-width: 100px;
 }
-.q-rank-stage[data-many="true"] .q-rank-tile-name { font-size: 18px; }
-.q-rank-stage[data-many="true"] .q-rank-tile-stat { font-size: 12px; }
+.q-rank-stage[data-many="true"] .q-rank-tile-name { font-size: 13px; }
+.q-rank-stage[data-many="true"] .q-rank-tile-stat { font-size: 10px; }
 .q-rank-tile--gone {
   opacity: 0;
   transform: translate(-50%, -50%) rotate(var(--rrot, 0deg)) scale(0.4);
@@ -2384,7 +2384,9 @@ function renderRanking(q) {
   const N = items.length;
   const hasStats = items.some(it => it.stat && String(it.stat).trim());
   const isMany = N > 6;
-  const scatter = scatterPositions(q.id || 'r', N, { slotXc: 55, slotW: 50, jitter: isMany ? 0.25 : 0.5 });
+  // The stage is now a roughly square-ish column (not the old full-width strip), so
+  // pass a lower aspect ratio and tighter jitter to keep tiles from overlapping.
+  const scatter = scatterPositions(q.id || 'r', N, { aspect: 1.1, jitter: isMany ? 0.15 : 0.18 });
 
   const tiles = items.map((it, i) => {
     const rank = i + 1;
@@ -2429,8 +2431,11 @@ function scatterPositions(seed, n, opts = {}) {
   // Initial scatter spans the full stage. Items can overlap the slot column —
   // they'll drift away once reveals start.
   const positions = [];
-  // Use a poisson-disc-ish jittered grid so items spread out evenly without overlapping too much
-  const cols = Math.ceil(Math.sqrt(n * 1.4));
+  // Use a poisson-disc-ish jittered grid so items spread out evenly without overlapping too much.
+  // `aspect` controls the grid's width:height ratio to match the actual container shape —
+  // a wide container wants more columns, a square-ish one wants columns ≈ rows.
+  const aspect = opts.aspect !== undefined ? opts.aspect : 1.4;
+  const cols = opts.cols || Math.max(2, Math.round(Math.sqrt(n * aspect)));
   const rows = Math.ceil(n / cols);
   const cellW = 92 / cols; // leave ~4% margin each side
   const cellH = 92 / rows;
