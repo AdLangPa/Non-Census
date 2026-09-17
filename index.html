@@ -420,7 +420,42 @@ body::before {
 .q-slide.revealed.q-name-slide .q-text-sm { font-size: 26px; }
 .q-slide.revealed.q-guess-slide .q-text-sm { font-size: 36px; }
 .q-source { display: none; }
-/* ── Source strip ── */
+/* ── Cloud Sync Modal ── */
+#cloud-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+}
+#cloud-modal {
+  background: var(--surface); border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  width: min(520px, 90vw); max-height: 80vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#cloud-modal-title {
+  background: var(--ink); color: var(--yellow);
+  font-family: var(--display); font-size: 16px; letter-spacing: 0.08em;
+  padding: 10px 16px; flex-shrink: 0;
+}
+#cloud-modal-body {
+  padding: 18px; overflow-y: auto; flex: 1;
+  font-family: var(--mono); font-size: 13px;
+}
+#cloud-modal-body p { line-height: 1.5; }
+#cloud-ep-list { display: flex; flex-direction: column; gap: 6px; }
+.cloud-ep-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border: 1px solid var(--border); background: var(--surface-2);
+}
+.cloud-ep-name { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cloud-ep-badge {
+  font-size: 10px; padding: 2px 6px; letter-spacing: 0.05em; text-transform: uppercase;
+  border: 1px solid var(--border); white-space: nowrap;
+}
+.cloud-ep-badge.local { background: var(--yellow); border-color: var(--ink); }
+.cloud-ep-badge.cloud-only { background: var(--surface); color: var(--text-muted); }
+#cloud-status { margin-bottom: 10px; }
 .q-source-strip {
   display: flex;
   align-items: center;
@@ -1726,6 +1761,214 @@ const BLANK_CONTESTANTS = () => ([
 // ╔════════════════════════════════════════════════╗
 // ║ STORAGE                                        ║
 // ╚════════════════════════════════════════════════╝
+// ╔════════════════════════════════════════════════╗
+// ║ GITHUB CLOUD SYNC                              ║
+// ╚════════════════════════════════════════════════╝
+const GH_TOKEN_KEY  = 'nonCensus.github.token';
+const GH_REPO       = 'AdLangPa/Non-Census';
+const GH_BRANCH     = 'main';
+const GH_EP_PATH    = 'episodes';
+const GH_API        = 'https://api.github.com';
+
+function ghToken() { return localStorage.getItem(GH_TOKEN_KEY) || ''; }
+function ghHeaders() {
+  return { 'Authorization': `token ${ghToken()}`, 'Content-Type': 'application/json' };
+}
+
+// List all episode files in the repo
+async function ghListEpisodes() {
+  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}?ref=${GH_BRANCH}`, { headers: ghHeaders() });
+  if (!r.ok) throw new Error(`GitHub ${r.status}: ${r.statusText}`);
+  const files = await r.json();
+  return files.filter(f => f.name.endsWith('.json') && f.name !== '.gitkeep');
+}
+
+// Load one episode from repo by filename
+async function ghLoadEpisode(filename) {
+  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}?ref=${GH_BRANCH}`, { headers: ghHeaders() });
+  if (!r.ok) throw new Error(`GitHub ${r.status}: ${r.statusText}`);
+  const meta = await r.json();
+  const content = atob(meta.content.replace(/\n/g,''));
+  return { ep: JSON.parse(content), sha: meta.sha, filename };
+}
+
+// Save/update one episode to repo
+async function ghSaveEpisode(ep, existingSha) {
+  const filename = `${ep.id}.json`;
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(ep, null, 2))));
+  const body = { message: `Update episode: ${ep.name}`, content, branch: GH_BRANCH };
+  if (existingSha) body.sha = existingSha;
+  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}`, {
+    method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body)
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
+  return (await r.json()).content.sha;
+}
+
+// Delete an episode from repo
+async function ghDeleteEpisode(filename, sha) {
+  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}`, {
+    method: 'DELETE', headers: ghHeaders(),
+    body: JSON.stringify({ message: `Delete episode: ${filename}`, sha, branch: GH_BRANCH })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
+}
+
+// SHA cache so we don't need a GET before every PUT
+const ghShaCache = {};
+
+// Push a local episode to GitHub (create or update)
+async function ghPushEpisode(ep) {
+  const filename = `${ep.id}.json`;
+  // Try to get current SHA if we don't have it cached
+  if (!ghShaCache[filename]) {
+    try {
+      const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}`, { headers: ghHeaders() });
+      if (r.ok) { const m = await r.json(); ghShaCache[filename] = m.sha; }
+    } catch(e) { /* new file, no sha needed */ }
+  }
+  const newSha = await ghSaveEpisode(ep, ghShaCache[filename]);
+  ghShaCache[filename] = newSha;
+  return newSha;
+}
+
+// Show the GitHub cloud modal
+function showCloudModal() {
+  const hasToken = !!ghToken();
+  const overlay = document.createElement('div');
+  overlay.id = 'cloud-overlay';
+  overlay.innerHTML = `
+    <div id="cloud-modal">
+      <div id="cloud-modal-title">☁ Cloud Sync</div>
+      <div id="cloud-modal-body">
+        ${!hasToken ? `
+          <p style="margin-bottom:12px;">Enter your GitHub token to sync episodes across devices.</p>
+          <div class="field">
+            <label>GitHub Token</label>
+            <input id="cloud-token-input" type="password" placeholder="github_pat_..." style="font-family:var(--mono); font-size:12px;">
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <button class="btn" id="cloud-save-token">Connect</button>
+            <button class="btn" id="cloud-cancel">Cancel</button>
+          </div>
+        ` : `
+          <div id="cloud-status" style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-bottom:12px;">Loading episodes from GitHub…</div>
+          <div id="cloud-ep-list" style="margin-bottom:14px;"></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" id="cloud-push-all">↑ Push All Local</button>
+            <button class="btn" id="cloud-refresh">↻ Refresh</button>
+            <button class="btn btn-danger" id="cloud-disconnect">Disconnect</button>
+            <button class="btn" id="cloud-cancel">Close</button>
+          </div>
+        `}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeCloudModal(); });
+  document.getElementById('cloud-cancel').addEventListener('click', closeCloudModal);
+
+  if (!hasToken) {
+    document.getElementById('cloud-save-token').addEventListener('click', async () => {
+      const t = document.getElementById('cloud-token-input').value.trim();
+      if (!t) return;
+      const st = document.getElementById('cloud-modal-body');
+      st.innerHTML = `<p style="font-family:var(--mono); font-size:12px;">Verifying token…</p>`;
+      try {
+        const r = await fetch(`${GH_API}/repos/${GH_REPO}`, { headers: { 'Authorization': `token ${t}` } });
+        if (!r.ok) throw new Error('Invalid token or no access to repo');
+        localStorage.setItem(GH_TOKEN_KEY, t);
+        closeCloudModal();
+        showCloudModal();
+      } catch(e) {
+        st.innerHTML = `<p style="color:var(--red); margin-bottom:10px;">${e.message}</p>
+          <button class="btn" id="cloud-retry">Try again</button>`;
+        document.getElementById('cloud-retry').addEventListener('click', () => { closeCloudModal(); showCloudModal(); });
+      }
+    });
+  } else {
+    document.getElementById('cloud-disconnect').addEventListener('click', () => {
+      localStorage.removeItem(GH_TOKEN_KEY);
+      closeCloudModal();
+      showPicker();
+    });
+    document.getElementById('cloud-push-all').addEventListener('click', async () => {
+      const status = document.getElementById('cloud-status');
+      const eps = loadEpisodes().filter(e => !e.isDemo);
+      if (!eps.length) { status.textContent = 'No local episodes to push.'; return; }
+      status.textContent = `Pushing ${eps.length} episode(s)…`;
+      let ok = 0;
+      for (const ep of eps) {
+        try { await ghPushEpisode(ep); ok++; } catch(e) { status.textContent = `Error: ${e.message}`; return; }
+      }
+      status.textContent = `✓ Pushed ${ok} episode(s) to GitHub.`;
+      await refreshCloudList();
+    });
+    document.getElementById('cloud-refresh').addEventListener('click', refreshCloudList);
+    refreshCloudList();
+  }
+}
+
+async function refreshCloudList() {
+  const status = document.getElementById('cloud-status');
+  const list = document.getElementById('cloud-ep-list');
+  if (!status || !list) return;
+  status.textContent = 'Loading…';
+  try {
+    const files = await ghListEpisodes();
+    if (!files.length) { list.innerHTML = '<p style="font-size:13px; color:var(--text-muted);">No episodes in GitHub yet.</p>'; status.textContent = ''; return; }
+    const localIds = new Set(loadEpisodes().map(e => e.id));
+    list.innerHTML = files.map(f => {
+      const id = f.name.replace('.json','');
+      const hasLocal = localIds.has(id);
+      return `<div class="cloud-ep-row">
+        <span class="cloud-ep-name">${escHtml(f.name)}</span>
+        <span class="cloud-ep-badge ${hasLocal ? 'local' : 'cloud-only'}">${hasLocal ? 'local + cloud' : 'cloud only'}</span>
+        <button class="btn btn-sm cloud-pull-btn" data-file="${escHtml(f.name)}">↓ Pull</button>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.cloud-pull-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.textContent = '…';
+        try {
+          const { ep } = await ghLoadEpisode(btn.dataset.file);
+          const migrated = migrateEpisode(ep);
+          const existing = getEpisode(migrated.id);
+          if (existing) {
+            upsertEpisode(migrated);
+            btn.textContent = '✓ Updated';
+          } else {
+            upsertEpisode(migrated);
+            btn.textContent = '✓ Imported';
+          }
+          await refreshCloudList();
+          showPicker();
+        } catch(e) { btn.textContent = 'Error'; alert(e.message); }
+      });
+    });
+    status.textContent = `${files.length} episode(s) on GitHub.`;
+  } catch(e) { status.textContent = `Error: ${e.message}`; list.innerHTML = ''; }
+}
+
+function upsertEpisode(ep) {
+  const eps = loadEpisodes();
+  const idx = eps.findIndex(e => e.id === ep.id);
+  if (idx >= 0) eps[idx] = ep; else eps.push(ep);
+  saveEpisodes(eps);
+  ghAutoPush(ep); // silently push to GitHub if connected
+}
+
+function closeCloudModal() {
+  const el = document.getElementById('cloud-overlay');
+  if (el) el.remove();
+}
+
+// Auto-push to GitHub after every save if token is present
+async function ghAutoPush(ep) {
+  if (!ghToken() || ep.isDemo) return;
+  try { await ghPushEpisode(ep); } catch(e) { console.warn('Cloud push failed:', e.message); }
+}
+
 const STORAGE_KEY = 'nonCensus.episodes.v1';
 
 function loadEpisodes() {
@@ -1740,12 +1983,6 @@ function saveEpisodes(eps) {
 function getEpisode(id) {
   if (id === 'demo') return DEMO_EPISODE;
   return loadEpisodes().find(e => e.id === id);
-}
-function upsertEpisode(ep) {
-  const eps = loadEpisodes();
-  const idx = eps.findIndex(e => e.id === ep.id);
-  if (idx >= 0) eps[idx] = ep; else eps.push(ep);
-  saveEpisodes(eps);
 }
 function deleteEpisode(id) {
   saveEpisodes(loadEpisodes().filter(e => e.id !== id));
@@ -2025,6 +2262,7 @@ function buildPickerSlide() {
         <button class="btn" data-act="studio">Studio</button>
         <button class="btn" data-act="presenter">Open Audience Window</button>
         <button class="btn" data-act="import">Import JSON</button>
+        <button class="btn" data-act="cloud">☁ Cloud Sync</button>
       </div>
     </div>
   </div>`;
@@ -2523,6 +2761,8 @@ function attachPickerHandlers() {
   });
   const presBtn = slide.querySelector('[data-act="presenter"]');
   if (presBtn) presBtn.addEventListener('click', e => { e.stopPropagation(); openAudienceWindow(); });
+  const cloudBtn = slide.querySelector('[data-act="cloud"]');
+  if (cloudBtn) cloudBtn.addEventListener('click', e => { e.stopPropagation(); showCloudModal(); });
 }
 
 // ─── SETUP / LAUNCH ───
@@ -4629,6 +4869,10 @@ function attachTypeListeners(q) {
 // ╔════════════════════════════════════════════════╗
 // ║ INIT                                           ║
 // ╚════════════════════════════════════════════════╝
+// Pre-store GitHub token (already authorised for AdLangPa/Non-Census)
+if (!localStorage.getItem('nonCensus.github.token')) {
+  localStorage.setItem('nonCensus.github.token', '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');
+}
 showPicker();
 </script>
 </body>
