@@ -1771,13 +1771,15 @@ const GH_EP_PATH    = 'episodes';
 const GH_API        = 'https://api.github.com';
 
 function ghToken() { return localStorage.getItem(GH_TOKEN_KEY) || ''; }
-function ghHeaders() {
-  return { 'Authorization': `token ${ghToken()}`, 'Content-Type': 'application/json' };
+function ghHeaders(isWrite) {
+  const h = { 'Authorization': `token ${ghToken()}` };
+  if (isWrite) h['Content-Type'] = 'application/json';
+  return h;
 }
 
 // List all episode files in the repo
 async function ghListEpisodes() {
-  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}?ref=${GH_BRANCH}`, { headers: ghHeaders() });
+  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}?ref=${GH_BRANCH}`, { headers: ghHeaders(false) });
   if (!r.ok) throw new Error(`GitHub ${r.status}: ${r.statusText}`);
   const files = await r.json();
   return files.filter(f => f.name.endsWith('.json') && f.name !== '.gitkeep');
@@ -1785,7 +1787,7 @@ async function ghListEpisodes() {
 
 // Load one episode from repo by filename
 async function ghLoadEpisode(filename) {
-  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}?ref=${GH_BRANCH}`, { headers: ghHeaders() });
+  const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}?ref=${GH_BRANCH}`, { headers: ghHeaders(false) });
   if (!r.ok) throw new Error(`GitHub ${r.status}: ${r.statusText}`);
   const meta = await r.json();
   const content = atob(meta.content.replace(/\n/g,''));
@@ -1799,7 +1801,7 @@ async function ghSaveEpisode(ep, existingSha) {
   const body = { message: `Update episode: ${ep.name}`, content, branch: GH_BRANCH };
   if (existingSha) body.sha = existingSha;
   const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}`, {
-    method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body)
+    method: 'PUT', headers: ghHeaders(true), body: JSON.stringify(body)
   });
   if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
   return (await r.json()).content.sha;
@@ -1808,7 +1810,7 @@ async function ghSaveEpisode(ep, existingSha) {
 // Delete an episode from repo
 async function ghDeleteEpisode(filename, sha) {
   const r = await fetch(`${GH_API}/repos/${GH_REPO}/contents/${GH_EP_PATH}/${filename}`, {
-    method: 'DELETE', headers: ghHeaders(),
+    method: 'DELETE', headers: ghHeaders(true),
     body: JSON.stringify({ message: `Delete episode: ${filename}`, sha, branch: GH_BRANCH })
   });
   if (!r.ok) { const e = await r.json(); throw new Error(e.message || r.statusText); }
@@ -1878,8 +1880,7 @@ function showCloudModal() {
       localStorage.setItem(GH_TOKEN_KEY, t);
       // Verify in background
       try {
-        const r = await fetch(`${GH_API}/repos/${GH_REPO}`, { headers: { 'Authorization': `token ${t}` } });
-        if (!r.ok) {
+        const r = await fetch(`${GH_API}/repos/${GH_REPO}`, { headers: { 'Authorization': `token ${t}` } });        if (!r.ok) {
           localStorage.removeItem(GH_TOKEN_KEY);
           throw new Error(`Token rejected by GitHub (${r.status}). Check the token has Contents read/write permission on AdLangPa/Non-Census.`);
         }
