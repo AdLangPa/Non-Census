@@ -1873,15 +1873,21 @@ function showCloudModal() {
       const t = document.getElementById('cloud-token-input').value.trim();
       if (!t) return;
       const st = document.getElementById('cloud-modal-body');
-      st.innerHTML = `<p style="font-family:var(--mono); font-size:12px;">Verifying token…</p>`;
+      st.innerHTML = `<p style="font-family:var(--mono); font-size:12px;">Saving token…</p>`;
+      // Save immediately — don't block on verification
+      localStorage.setItem(GH_TOKEN_KEY, t);
+      // Verify in background
       try {
         const r = await fetch(`${GH_API}/repos/${GH_REPO}`, { headers: { 'Authorization': `token ${t}` } });
-        if (!r.ok) throw new Error('Invalid token or no access to repo');
-        localStorage.setItem(GH_TOKEN_KEY, t);
+        if (!r.ok) {
+          localStorage.removeItem(GH_TOKEN_KEY);
+          throw new Error(`Token rejected by GitHub (${r.status}). Check the token has Contents read/write permission on AdLangPa/Non-Census.`);
+        }
         closeCloudModal();
         showCloudModal();
       } catch(e) {
-        st.innerHTML = `<p style="color:var(--red); margin-bottom:10px;">${e.message}</p>
+        localStorage.removeItem(GH_TOKEN_KEY);
+        st.innerHTML = `<p style="color:var(--red); margin-bottom:10px; font-size:12px;">${e.message}</p>
           <button class="btn" id="cloud-retry">Try again</button>`;
         document.getElementById('cloud-retry').addEventListener('click', () => { closeCloudModal(); showCloudModal(); });
       }
