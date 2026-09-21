@@ -1,0 +1,26 @@
+{
+  "id": "ep_muanlree_4s7g",
+  "name": "Untitled Episode",
+  "framing": {
+    "title": "NON-CENSUS",
+    "logoUrl": null,
+    "tagline": "Digging into the data nobody else bothered to.",
+    "closeTitle": "Final Results.",
+    "closeBody": ""
+  },
+  "contestants": [
+    {
+      "id": "c_i7345",
+      "name": "",
+      "subtext": "",
+      "photoUrl": null
+    },
+    {
+      "id": "c_c6r25",
+      "name": "",
+      "subtext": "",
+      "photoUrl": null
+    }
+  ],
+  "questions": []
+}
