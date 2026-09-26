@@ -6,49 +6,56 @@
 <title>Non-Census</title>
 <link rel="preconnect" href="https://fonts.googleapis.com/">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Lora:ital,wght@0,500;0,700;1,500;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* ─────── PALETTE (single committed RAW set) ─────── */
+/* ─────── PALETTE — Cold Intelligence ─────── */
 :root {
-  --paper: #fffceb;       /* cream */
-  --yellow: #f5e94a;      /* signal yellow */
-  --red: #e02d2a;         /* tomato red */
-  --ink: #1a1a1a;         /* near-black */
-  --ink-soft: #2a2a2a;
-  --paper-2: #f6efd6;     /* slightly darker cream for surfaces */
-  --paper-3: #ebe3c5;
-  --paper-hover: #f1e9c8;
-  --input-bg: #fffceb;
-  /* Aliases used widely below */
-  --bg: var(--paper);
-  --surface: var(--paper);
-  --surface-2: var(--paper-2);
-  --surface-3: var(--paper-3);
-  --surface-hover: var(--paper-hover);
+  /* Brand tokens */
+  --manila: #f0e5ca;
+  --paper-bright: #faf7ef;
+  --paper-cool: #e9edf0;
+  --ink: #151a1d;
+  --ink-soft: #2a3238;
+  --brick: #b1312c;
+  --brick-deep: #7a1f1b;
+  --steel: #2f5d7a;
+  --steel-deep: #1f3e52;
+  --gray-rule: #6b737a;
+  --gray-muted: #8a9298;
+  /* Compatibility aliases */
+  --paper: var(--manila);
+  --red: var(--brick);
+  --yellow: var(--paper-cool);
+  --bg: var(--manila);
+  --surface: var(--paper-bright);
+  --surface-2: var(--paper-cool);
+  --surface-3: #dce2e6;
+  --surface-hover: #f5f0e4;
+  --input-bg: var(--paper-bright);
   --text: var(--ink);
-  --text-off: #4a4a4a;
-  --text-muted: #6e6e6e;
-  --text-subtle: #a39c7c;
-  --border-subtle: rgba(26,26,26,0.10);
-  --border: rgba(26,26,26,0.22);
-  --border-strong: rgba(26,26,26,0.45);
+  --text-off: var(--ink-soft);
+  --text-muted: var(--gray-muted);
+  --text-subtle: var(--gray-rule);
+  --border-subtle: rgba(21,26,29,0.08);
+  --border: rgba(21,26,29,0.18);
+  --border-strong: rgba(21,26,29,0.40);
   --border-bold: var(--ink);
-  --accent: var(--red);
-  --accent-hover: #b8211f;
-  --accent-tint: rgba(224,45,42,0.10);
-  --accent-soft: rgba(224,45,42,0.05);
-  --danger: var(--red);
-  --danger-tint: rgba(224,45,42,0.12);
-  --shadow: 0 2px 0 var(--ink);
-  --hard-shadow: 4px 4px 0 var(--ink);
+  --accent: var(--brick);
+  --accent-hover: var(--brick-deep);
+  --accent-tint: rgba(177,49,44,0.08);
+  --accent-soft: rgba(177,49,44,0.04);
+  --danger: var(--brick);
+  --danger-tint: rgba(177,49,44,0.10);
+  --shadow: 0 1px 0 var(--ink);
+  --hard-shadow: 3px 3px 0 var(--ink);
   /* Type stack */
-  --display: 'Bungee', sans-serif;
-  --serif: 'Fraunces', Georgia, serif;
-  --mono: 'DM Mono', ui-monospace, monospace;
-  --sans: 'Fraunces', Georgia, serif; /* body uses Fraunces too — we don't need a second sans */
+  --display: 'Playfair Display', Georgia, serif;
+  --serif: 'Lora', Georgia, serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --sans: 'Public Sans', sans-serif;
 }
 
 html, body {
@@ -60,28 +67,16 @@ html, body {
 }
 
 /* Halftone + texture utilities — used throughout */
-.tx-halftone {
-  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
-  background-size: 8px 8px;
-}
-.tx-halftone-tight { background-image: radial-gradient(var(--ink) 1px, transparent 1.2px); background-size: 5px 5px; }
-.tx-stripes {
-  background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(26,26,26,0.08) 8px 9px);
-}
+/* halftone utilities removed — Cold Intelligence uses grid texture */
 
-/* Page-level texture: a faint halftone on the whole body so even bare slides have grain */
-@keyframes bg-drift {
-  from { background-position: 0 0; }
-  to   { background-position: 6px 6px; }
-}
+/* Page-level grid texture */
 body::before {
   content: ''; position: fixed; inset: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(26,26,26,0.18) 1px, transparent 1.2px);
-  background-size: 6px 6px;
-  opacity: 0.18;
-  z-index: 1;
-  mix-blend-mode: multiply;
-  animation: bg-drift 4s linear infinite;
+  background-image:
+    linear-gradient(to right, rgba(21,26,29,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21,26,29,0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  z-index: 0;
 }
 
 #deck { width: 100%; height: 100%; position: relative; }
@@ -259,43 +254,33 @@ body::before {
 .setup-link:hover { color: var(--text-off); }
 
 /* ─────── TITLE ─────── */
-.slide.title-slide { background: var(--yellow); }
-@keyframes bg-drift-14 {
-  from { background-position: 0 0; }
-  to   { background-position: 14px 14px; }
-}
+.slide.title-slide { background: var(--manila); }
 .slide.title-slide .slide-frame::before {
   content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(var(--ink) 1.4px, transparent 1.6px);
-  background-size: 9px 9px;
-  opacity: 0.16; pointer-events: none;
-  animation: bg-drift 5s linear infinite;
+  background-image:
+    linear-gradient(to right, rgba(21,26,29,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21,26,29,0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
 }
-.slide.title-slide .slide-frame::after {
-  content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(var(--red) 1.4px, transparent 1.6px);
-  background-size: 14px 14px;
-  opacity: 0.30; pointer-events: none;
-  mix-blend-mode: multiply;
-  animation: bg-drift-14 8s linear infinite;
-}
+.slide.title-slide .slide-frame::after { content: none; }
 /* Chrome decorations removed: sparks, tape strips, torn band, "No. 003" text */
 .title-spark, .title-tape, .title-band, .title-band-text { display: none !important; }
 .wordmark {
   font-family: var(--display);
-  font-size: 101px; font-weight: 400;
-  letter-spacing: -0.02em; line-height: 0.85; color: var(--ink);
+  font-size: 101px; font-weight: 800;
+  letter-spacing: -0.015em; line-height: 0.85; color: var(--ink);
   position: relative; z-index: 4;
   text-align: center;
 }
 .wordmark .splat {
   display: inline-block;
-  background: var(--red); color: var(--yellow);
+  background: var(--brick); color: var(--manila);
   padding: 0 0.08em;
-  transform: rotate(-3deg) skewX(-4deg);
+  transform: none;
   margin: 0 -0.04em;
 }
-.wordmark span { color: var(--red); }
+.wordmark span { color: var(--brick); }
 .wordmark-logo {
   display: block; margin: 0 auto;
   max-width: 80%; max-height: 324px;
@@ -306,20 +291,21 @@ body::before {
 .tagline {
   margin-top: 17px; font-family: var(--mono);
   font-size: 12px; font-weight: 500;
-  letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase;
+  letter-spacing: 0.3em; color: var(--steel); text-transform: uppercase;
   position: relative; z-index: 4;
-  background: var(--ink); color: var(--yellow);
-  display: inline-block; padding: 4px 10px;
-  transform: rotate(-1deg);
+  display: inline-block; padding: 4px 0;
+  transform: none;
 }
 
 /* ─────── CONTESTANT SLIDE ─────── */
 .slide[data-type="contestant"] { background: var(--paper); }
 .slide[data-type="contestant"] .slide-frame::before {
   content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
-  background-size: 9px 9px;
-  opacity: 0.10; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(21,26,29,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21,26,29,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
 }
 .contestant-layout {
   display: grid;
@@ -333,22 +319,13 @@ body::before {
   position: relative;
 }
 .contestant-photo-wrap::before,
-.contestant-photo-wrap::after {
-  content: ''; position: absolute;
-  width: 65px; height: 14px;
-  background: rgba(245,233,74,0.85);
-  border: 0.5px solid rgba(0,0,0,0.20);
-  z-index: 3; pointer-events: none;
-}
-.contestant-photo-wrap::before { top: -2%; left: 8%; transform: rotate(-7deg); }
-.contestant-photo-wrap::after { bottom: -2%; right: 8%; transform: rotate(6deg); background: rgba(224,45,42,0.55); }
+.contestant-photo-wrap::after { content: none; }
 .contestant-photo {
   width: 100%; max-width: 317px;
   aspect-ratio: 1 / 1; object-fit: cover;
-  border: 3px solid var(--ink);
+  border: 2px solid var(--ink);
   background: var(--surface-2);
   display: block; position: relative; z-index: 2;
-  box-shadow: 4px 4px 0 var(--ink);
 }
 .contestant-photo-placeholder {
   display: flex; align-items: center; justify-content: center;
@@ -366,9 +343,9 @@ body::before {
 .contestant-eyebrow { display: none !important; }
 .contestant-name {
   font-family: var(--display);
-  font-size: 72px; font-weight: 400;
+  font-size: 72px; font-weight: 800;
   line-height: 0.9; color: var(--ink);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   margin-bottom: 17px;
   text-transform: uppercase;
 }
@@ -385,18 +362,19 @@ body::before {
 .slide.q-slide { background: var(--paper); }
 .slide.q-slide .slide-frame::before {
   content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(var(--ink) 1.2px, transparent 1.4px);
-  background-size: 9px 9px;
-  opacity: 0.08; pointer-events: none; z-index: 0;
-  animation: bg-drift 6s linear infinite;
+  background-image:
+    linear-gradient(to right, rgba(21,26,29,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21,26,29,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
 }
 .slide.q-slide .slide-frame > * { position: relative; z-index: 1; width: 100%; }
 .q-format-label { display: none !important; }
 .q-text {
   font-family: var(--serif); font-style: italic;
-  font-size: 62px; font-weight: 900;
+  font-size: 62px; font-weight: 700;
   line-height: 1.04; color: var(--ink);
-  letter-spacing: -0.018em;
+  letter-spacing: -0.015em;
   text-align: center !important;
   text-wrap: balance;
   overflow-wrap: break-word;
@@ -410,8 +388,8 @@ body::before {
 .q-slide.revealed.q-break-slide .q-text { font-size: 40px; }
 .q-text-sm {
   font-family: var(--serif); font-style: italic;
-  font-size: 52px; font-weight: 900;
-  line-height: 1.05; color: var(--ink); letter-spacing: -0.018em;
+  font-size: 52px; font-weight: 700;
+  line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
   text-align: center !important;
   text-wrap: balance;
   overflow-wrap: break-word;
@@ -434,8 +412,8 @@ body::before {
   overflow: hidden;
 }
 #cloud-modal-title {
-  background: var(--ink); color: var(--yellow);
-  font-family: var(--display); font-size: 16px; letter-spacing: 0.08em;
+  background: var(--ink); color: var(--manila);
+  font-family: var(--mono); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
   padding: 10px 16px; flex-shrink: 0;
 }
 #cloud-modal-body {
@@ -470,7 +448,7 @@ body::before {
 }
 .q-source-text {
   font-family: var(--mono); font-size: 11px;
-  color: var(--ink); opacity: 0.55;
+  color: var(--steel); opacity: 0.85;
   letter-spacing: 0.04em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 70%;
@@ -492,63 +470,49 @@ body::before {
 .q-option {
   position: relative;
   padding: 28px 32px;
-  border: 3px solid var(--ink);
-  background: #fff;
+  border: 2px solid var(--gray-rule);
+  background: var(--paper-bright);
   text-align: center;
-  transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease, background 0.3s ease, opacity 0.3s ease;
 }
-.q-option.q-option-a { transform: rotate(-0.5deg); }
-.q-option.q-option-b { transform: rotate(0.4deg); }
+.q-option.q-option-a { }
+.q-option.q-option-b { }
 .q-option-label {
   font-family: var(--mono); font-size: 13px; font-weight: 500;
-  letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.3em; color: var(--steel); text-transform: uppercase;
   margin-bottom: 8px;
 }
 .q-option-text {
-  font-family: var(--display);
-  font-size: 36px; font-weight: 400;
+  font-family: var(--sans);
+  font-size: 34px; font-weight: 700;
   color: var(--ink); line-height: 1.05;
-  text-transform: uppercase; letter-spacing: -0.01em;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
 .q-option-pct {
-  font-family: var(--display);
-  font-size: 64px; font-weight: 400;
-  color: var(--red); margin-top: 10px; line-height: 0.9;
+  font-family: var(--mono);
+  font-size: 64px; font-weight: 600;
+  color: var(--brick); margin-top: 10px; line-height: 0.9;
   opacity: 0; transform: translateY(6px);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
-.revealed .q-option { transition: transform 0.45s ease, background 0.45s ease, box-shadow 0.45s ease; }
+.revealed .q-option { transition: border-color 0.4s ease, background 0.4s ease, opacity 0.4s ease; }
 .revealed .q-option.winner {
-  background: var(--yellow); border-color: var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-  transform: rotate(-1.2deg); z-index: 4;
+  background: var(--paper-bright); border-color: var(--brick);
+  border-width: 2px; z-index: 4;
 }
-.revealed .q-option:not(.winner) { opacity: 0.55; transform: rotate(0.6deg); }
+.revealed .q-option:not(.winner) { opacity: 0.55; }
 .revealed .q-option-pct { opacity: 1; transform: translateY(0); }
-.revealed .q-option.winner .q-option-pct { color: var(--red); }
-.q-slide.revealed::after {
-  content: ''; position: absolute;
-  top: 6%; left: 14%; width: 38%; height: 3px;
-  background: rgba(224,45,42,0.78);
-  border: 0.5px solid rgba(0,0,0,0.18);
-  transform: rotate(-3deg);
-  pointer-events: none; z-index: 3;
-}
+.revealed .q-option.winner .q-option-pct { color: var(--brick); }
+.q-slide.revealed::after { content: none; }
 .q-slide .reveal-burst { display: none; }
-.q-slide.revealed > .slide-frame > .reveal-burst {
-  display: block;
-  position: absolute; top: 4%; right: 6%;
-  font-family: var(--display); color: var(--red);
-  font-size: 43px; transform: rotate(8deg);
-  z-index: 4; pointer-events: none; line-height: 1;
-}
+.q-slide.revealed > .slide-frame > .reveal-burst { display: none; }
 
 /* Over or Under */
 .q-ou-options { display: flex; gap: 20px; justify-content: center; width: 100%; }
 .q-ou-btn {
-  font-family: var(--display); font-size: 36px; font-weight: 400;
-  letter-spacing: -0.01em; text-transform: uppercase; padding: 16px 56px;
-  border: 3px solid var(--ink); color: var(--ink); background: #fff;
+  font-family: var(--sans); font-size: 32px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; padding: 16px 56px;
+  border: 2px solid var(--gray-rule); color: var(--steel); background: var(--paper-bright);
   transition: all 0.3s;
 }
 /* Number area: baseline + actual stacked */
@@ -557,8 +521,8 @@ body::before {
   width: 100%; gap: 0;
 }
 .q-ou-number {
-  font-family: var(--display);
-  font-size: 160px; font-weight: 400;
+  font-family: var(--mono);
+  font-size: 160px; font-weight: 600;
   color: var(--ink); line-height: 0.9;
   text-align: center;
   position: relative; display: inline-block;
@@ -578,28 +542,26 @@ body::before {
 .revealed .q-ou-number::after { opacity: 1; }
 /* Actual answer number — hidden pre-reveal, appears in red below */
 .q-ou-actual {
-  font-family: var(--display);
-  font-size: 120px; font-weight: 400;
-  color: var(--red); line-height: 0.9;
+  font-family: var(--mono);
+  font-size: 120px; font-weight: 600;
+  color: var(--brick); line-height: 0.9;
   text-align: center;
   opacity: 0; transform: translateY(8px);
   transition: opacity 0.4s ease 0.25s, transform 0.4s ease 0.25s;
 }
 .revealed .q-ou-actual { opacity: 1; transform: translateY(0); }
 .revealed .winner-ou {
-  background: var(--yellow); color: var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-  transform: rotate(-1.2deg);
+  background: var(--paper-bright); color: var(--brick); border-color: var(--brick);
 }
-.revealed .q-ou-options .q-ou-btn:not(.winner-ou) { opacity: 0.45; transform: rotate(0.6deg); }
+.revealed .q-ou-options .q-ou-btn:not(.winner-ou) { opacity: 0.4; }
 /* Legacy note — hidden in new design */
 .q-ou-answer { display: none !important; }
 
 /* Guess-the-percentage */
 .q-guess-answer {
-  font-family: var(--display);
-  font-size: 200px; font-weight: 400;
-  color: var(--red); line-height: 0.9;
+  font-family: var(--mono);
+  font-size: 200px; font-weight: 600;
+  color: var(--brick); line-height: 0.9;
   text-align: center; width: 100%;
   opacity: 0; transform: translateY(7px);
   transition: opacity 0.5s ease, transform 0.5s ease;
@@ -616,21 +578,116 @@ body::before {
 
 /* Tiebreaker */
 .q-tiebreaker-label {
-  font-family: var(--display); font-size: 14px; font-weight: 400;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  background: var(--red); color: var(--yellow);
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  background: var(--steel); color: var(--paper-bright);
   padding: 6px 20px; text-align: center; width: 100%;
-  box-shadow: 3px 3px 0 var(--ink);
 }
 .q-tiebreaker-answer {
-  font-family: var(--display);
-  font-size: 200px; font-weight: 400;
-  color: var(--red); line-height: 0.9;
+  font-family: var(--mono);
+  font-size: 200px; font-weight: 600;
+  color: var(--brick); line-height: 0.9;
   text-align: center; width: 100%;
   opacity: 0; transform: translateY(7px);
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 .revealed .q-tiebreaker-answer { opacity: 1; transform: translateY(0); }
+/* ─────── HIGHER OR LOWER ─────── */
+.q-hl-slide .slide-frame {
+  padding: 36px 72px 60px;
+  gap: 12px;
+}
+.q-hl-history {
+  display: flex; flex-direction: column; gap: 5px;
+  width: 100%; flex: 0 0 auto;
+}
+.q-hl-history-item {
+  display: grid; grid-template-columns: 1fr auto auto;
+  align-items: center; gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.q-hl-h-name {
+  font-family: var(--sans); font-size: 15px; font-weight: 500;
+  color: var(--gray-muted); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.q-hl-h-dir {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: var(--steel); letter-spacing: 0.15em; text-transform: uppercase;
+}
+.q-hl-h-pct {
+  font-family: var(--mono); font-size: 15px; font-weight: 600;
+  color: var(--brick); letter-spacing: 0.04em;
+}
+.q-hl-current {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  width: 100%;
+}
+.q-hl-item-card {
+  display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%;
+}
+.q-hl-baseline-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.q-hl-baseline-label {
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.25em; color: var(--steel); text-transform: uppercase;
+}
+.q-hl-baseline-pct {
+  font-family: var(--mono); font-size: 96px; font-weight: 600;
+  color: var(--ink); line-height: 0.9;
+  position: relative; display: inline-block;
+}
+.q-hl-baseline-pct::after {
+  content: '';
+  position: absolute; left: -6%; top: 50%;
+  width: 112%; height: 7px;
+  background: var(--brick); border-radius: 3px;
+  transform: rotate(-4deg) translateY(-50%);
+  opacity: 0; transition: opacity 0.25s ease 0.1s;
+}
+.q-hl-item-card.revealed .q-hl-baseline-pct::after { opacity: 1; }
+.q-hl-item-name {
+  font-family: var(--sans);
+  font-size: 48px; font-weight: 700;
+  color: var(--ink); line-height: 1; text-transform: uppercase;
+  letter-spacing: 0.04em; text-align: center;
+}
+.q-hl-start-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.q-hl-start-label {
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.25em; color: var(--steel); text-transform: uppercase;
+}
+.q-hl-start-pct {
+  font-family: var(--mono); font-size: 110px; font-weight: 600;
+  color: var(--ink); line-height: 0.9; text-align: center;
+}
+.q-hl-buttons {
+  display: flex; gap: 12px;
+}
+.q-hl-btn {
+  font-family: var(--sans); font-size: 24px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 12px 40px; border: 2px solid var(--gray-rule);
+  background: var(--paper-bright); color: var(--ink);
+  opacity: 0.7;
+}
+.q-hl-item-card.revealed .q-hl-buttons { opacity: 0.4; }
+.q-hl-actual {
+  font-family: var(--mono); font-size: 96px; font-weight: 600;
+  color: var(--brick); line-height: 0.9;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.4s ease 0.2s, transform 0.4s ease 0.2s;
+}
+.q-hl-item-card.revealed .q-hl-actual { opacity: 1; transform: translateY(0); }
+.q-hl-dir-result {
+  font-family: var(--mono); font-size: 18px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--brick);
+  opacity: 0; transition: opacity 0.3s ease 0.1s;
+}
+.q-hl-item-card.revealed .q-hl-dir-result { opacity: 1; }
+
+
 .q-data-slide .slide-frame {
   display: flex; flex-direction: column;
   justify-content: flex-start; align-items: stretch;
@@ -750,23 +807,22 @@ body::before {
   left: var(--rx, 50%); top: var(--ry, 50%);
   transform: translate(-50%, -50%) rotate(var(--rrot, 0deg));
   padding: 10px 16px;
-  border: 3px solid var(--ink);
-  background: #fff;
-  box-shadow: 3px 3px 0 var(--ink);
+  border: 2px solid var(--gray-rule);
+  background: var(--paper-bright);
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
   max-width: 200px;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .q-rank-tile-name {
-  font-family: var(--display); font-size: 20px; font-weight: 400;
+  font-family: var(--sans); font-size: 20px; font-weight: 700;
   color: var(--ink); text-transform: uppercase;
-  letter-spacing: -0.01em; line-height: 1.1;
+  letter-spacing: 0.04em; line-height: 1.1;
   overflow-wrap: break-word;
 }
 .q-rank-tile-stat {
-  font-family: var(--mono); font-size: 14px; font-weight: 700;
-  color: var(--red); margin-top: 3px; letter-spacing: 0.04em;
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+  color: var(--brick); margin-top: 3px; letter-spacing: 0.04em;
 }
 /* Compact for 7+ items — slightly smaller so 9 items fit */
 .q-rank-stage[data-many="true"] .q-rank-tile {
@@ -793,35 +849,27 @@ body::before {
   display: grid; grid-template-columns: 42px 1fr;
   align-items: center; gap: 10px;
   padding: 10px 18px;
-  border: 3px solid var(--ink);
-  background: var(--yellow);
-  box-shadow: 3px 3px 0 var(--ink);
-  transform: rotate(-1deg);
+  border: 2px solid var(--gray-rule);
+  background: var(--paper-bright);
 }
-.q-rank-list-item:nth-child(even) { transform: rotate(0.6deg); }
+.q-rank-list-item:nth-child(even) { }
 .q-rank-list[data-has-stats="true"] .q-rank-list-item {
   grid-template-columns: 42px 1fr auto;
 }
 @keyframes rank-settle {
-  0%   { transform: scale(2.2) rotate(-2deg); opacity: 0; }
-  35%  { transform: scale(1.1) rotate(0.5deg); opacity: 1; }
-  100% { transform: scale(1) rotate(-1deg); }
+  0%   { transform: scale(1.15); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
-@keyframes rank-settle-even {
-  0%   { transform: scale(2.2) rotate(2deg); opacity: 0; }
-  35%  { transform: scale(1.1) rotate(-0.5deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0.6deg); }
-}
-.q-rank-list-item--new { animation: rank-settle 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
-.q-rank-list-item--new:nth-child(even) { animation-name: rank-settle-even; }
+.q-rank-list-item--new { animation: rank-settle 0.35s ease both; }
+.q-rank-list-item--new:nth-child(even) { }
 .q-rank-num {
-  font-family: var(--display); font-size: 28px; font-weight: 400;
-  color: var(--red); text-align: left; line-height: 1;
+  font-family: var(--mono); font-size: 22px; font-weight: 600;
+  color: var(--brick); text-align: left; line-height: 1;
 }
 .q-rank-name {
-  font-family: var(--display); font-size: 20px; font-weight: 400;
+  font-family: var(--sans); font-size: 20px; font-weight: 700;
   color: var(--ink); text-transform: uppercase;
-  letter-spacing: -0.01em; line-height: 1.05;
+  letter-spacing: 0.04em; line-height: 1.05;
 }
 .q-rank-stat {
   font-family: var(--mono); font-size: 14px; color: var(--text-off);
@@ -2356,6 +2404,87 @@ function buildContestantSlide(c, idx, total) {
   </div>`;
 }
 
+
+function renderHigherLower(q) {
+  const items = q.items || [];
+  const startPct = q.startPct != null ? q.startPct : '?';
+
+  const historyHtml = items.map((it, i) => {
+    const basePct = i === 0 ? (q.startPct != null ? q.startPct : 0) : (items[i-1].pct != null ? items[i-1].pct : 0);
+    const dir = it.pct != null && basePct !== '?' ? (it.pct > basePct ? 'HIGHER' : 'LOWER') : '?';
+    return `<div class="q-hl-history-item" data-hl-hist="${i}" style="display:none">
+      <span class="q-hl-h-name">${escHtml(it.answer || '')}</span>
+      <span class="q-hl-h-dir">${dir}</span>
+      <span class="q-hl-h-pct">${it.pct != null ? it.pct + '%' : '?'}</span>
+    </div>`;
+  }).join('');
+
+  const itemsHtml = items.map((it, i) => {
+    const basePct = i === 0 ? (q.startPct != null ? q.startPct : '?') : (items[i-1].pct != null ? items[i-1].pct : '?');
+    const dir = it.pct != null && basePct !== '?' ? (it.pct > basePct ? '▲ HIGHER' : '▼ LOWER') : '?';
+    return `<div class="q-hl-item-card" data-hl-item="${i}" style="display:none">
+      <div class="q-hl-baseline-wrap">
+        <div class="q-hl-baseline-label">BASELINE</div>
+        <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
+      </div>
+      <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
+      <div class="q-hl-buttons">
+        <div class="q-hl-btn">▲ HIGHER</div>
+        <div class="q-hl-btn">▼ LOWER</div>
+      </div>
+      <div class="q-hl-dir-result">${escHtml(dir)}</div>
+      <div class="q-hl-actual">${it.pct != null ? escHtml(String(it.pct)) + '%' : '?'}</div>
+    </div>`;
+  }).join('');
+
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+    <div class="q-hl-current">
+      <div class="q-hl-history">${historyHtml}</div>
+      <div class="q-hl-start-wrap" data-hl-start>
+        <div class="q-hl-start-label">STARTING POINT</div>
+        <div class="q-hl-start-pct">${escHtml(String(startPct))}%</div>
+      </div>
+      ${itemsHtml}
+    </div>
+    ${renderSourceStrip(q)}`;
+}
+
+// step: 0=start shown, 1=item0 revealed, 2=item0 in history+item1 shown, 3=item1 revealed...
+function applyHigherLowerState(slide, step) {
+  const items = slide.querySelectorAll('.q-hl-item-card');
+  const histItems = slide.querySelectorAll('.q-hl-history-item');
+  const startEl = slide.querySelector('[data-hl-start]');
+  const total = items.length;
+
+  // step 0: show start wrap, hide all items
+  // even step > 0: show item at index (step/2 - 1)... wait:
+  // step=1: item 0 revealed, step=2: item 1 shown, step=3: item 1 revealed...
+  // Actually: step=2i means show item i (0-indexed) unrevealed; step=2i+1 means item i revealed
+  // step=0: show start
+
+  // step=0: start; step=1: item0 unresolved; step=2: item0 revealed; step=3: item1 unresolved; etc.
+  const itemIdx = step === 0 ? -1 : Math.floor((step - 1) / 2); // which item is current (-1=none)
+  const isRevealed = step > 0 && (step % 2 === 0); // even step (>=2) = current item revealed
+
+  // Start wrap
+  if (startEl) startEl.style.display = (step === 0) ? '' : 'none';
+
+  // Item cards
+  items.forEach((card, i) => {
+    const isCurrent = i === itemIdx;
+    card.style.display = isCurrent ? '' : 'none';
+    card.classList.toggle('revealed', isCurrent && isRevealed);
+  });
+
+  // History items: show items 0..histCount-1
+  // When item is revealed (odd step), it's still shown in place — not in history yet
+  // When next even step, it moves to history
+  const inHistory = isRevealed ? itemIdx : itemIdx; // same — only items BEFORE current are in history
+  histItems.forEach((item, i) => {
+    item.style.display = i < itemIdx ? '' : 'none';
+  });
+}
+
 function buildQuestionSlide(ep, q) {
   let body = '';
 
@@ -2368,6 +2497,7 @@ function buildQuestionSlide(ep, q) {
     case 'ranking': body = renderRanking(q); break;
     case 'guess_data': body = renderGuessData(q); break;
     case 'tiebreaker': body = renderTiebreaker(q); break;
+    case 'higher_lower': body = renderHigherLower(q); break;
     default: body = `<p class="q-text">[unknown question type: ${escHtml(q.type)}]</p>`;
   }
 
@@ -2382,6 +2512,7 @@ function buildQuestionSlide(ep, q) {
     'ranking': ' q-rank-slide',
     'guess_data': ' q-data-slide',
     'tiebreaker': ' q-tiebreaker-slide',
+    'higher_lower': ' q-hl-slide',
   };
   const extraClass = typeClasses[q.type] || '';
   return `<div class="slide q-slide${extraClass}" data-type="question" data-qid="${escHtml(q.id)}">
@@ -2442,7 +2573,8 @@ function formatLabelForType(t) {
     guess_pct: 'Guess the percentage',
     name_as_many: 'Name as many…',
     guess_breakdown: 'Guess the breakdown',
-    ranking: 'Rank them'
+    ranking: 'Rank them',
+    higher_lower: 'Higher or Lower?'
   })[t] || '';
 }
 
@@ -2912,6 +3044,7 @@ function handleAdvance() {
     const k = slideKey(state.current);
     // Ranking question: reveal one item at a time
     const rankList = slide.querySelector('.q-rank-stage');
+    const hlStage = slide.querySelector('.q-hl-current');
     if (rankList) {
       const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
       const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
@@ -2932,6 +3065,22 @@ function handleAdvance() {
         return;
       }
       // already fully revealed → fall through to advance
+    } else if (hlStage) {
+      const items = hlStage.querySelectorAll('.q-hl-item-card');
+      const total = items.length;
+      const maxStep = total * 2;
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      if (cur < maxStep) {
+        const nextStep = cur + 1;
+        if (k) state.revealed[k] = nextStep;
+        applyHigherLowerState(slide, nextStep);
+        if (nextStep >= maxStep) { slide.classList.add('revealed'); refitSlideQuestionText(slide); }
+        updateHint();
+        updatePresenterSurface();
+        broadcastState();
+        return;
+      }
+      // fully done → fall through to advance
     } else if (!slide.classList.contains('revealed')) {
       // Non-ranking: classic single-click reveal
       if (k) state.revealed[k] = true;
@@ -2951,6 +3100,7 @@ function handleRetreat() {
   if (slide && slide.classList.contains('q-slide')) {
     const k = slideKey(state.current);
     const rankList = slide.querySelector('.q-rank-stage');
+    const hlStage2 = slide.querySelector('.q-hl-current');
     if (rankList) {
       const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
       if (cur > 0) {
@@ -2962,6 +3112,19 @@ function handleRetreat() {
         }
         slide.classList.remove('revealed');
         applyRankingState(slide, nextCount);
+        refitSlideQuestionText(slide);
+        updateHint();
+        updatePresenterSurface();
+        broadcastState();
+        return;
+      }
+    } else if (hlStage2) {
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      if (cur > 0) {
+        const nextStep = cur - 1;
+        if (nextStep === 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextStep;
+        slide.classList.remove('revealed');
+        applyHigherLowerState(slide, nextStep);
         refitSlideQuestionText(slide);
         updateHint();
         updatePresenterSurface();
@@ -3486,12 +3649,31 @@ function updatePresenterSurface() {
 
   // Advance button label
   const rankList = cur ? cur.querySelector('.q-rank-stage') : null;
+  const hlStage3 = cur ? cur.querySelector('.q-hl-current') : null;
   if (rankList) {
     const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
     const k = slideKey(state.current);
     const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
     if (revealedCount < total) {
       pbarAdvance.textContent = `Reveal #${revealedCount + 1} of ${total}`;
+      pbarAdvance.disabled = false;
+    } else if (state.current === slides.length - 1) {
+      pbarAdvance.textContent = 'End';
+      pbarAdvance.disabled = true;
+    } else {
+      pbarAdvance.textContent = 'Next →';
+      pbarAdvance.disabled = false;
+    }
+  } else if (hlStage3) {
+    const hlItems = hlStage3.querySelectorAll('.q-hl-item-card');
+    const maxStepHL = hlItems.length * 2;
+    const k2 = slideKey(state.current);
+    const curStepHL = (k2 && typeof state.revealed[k2] === 'number') ? state.revealed[k2] : 0;
+    if (curStepHL < maxStepHL) {
+      const nextStep = curStepHL + 1;
+      const isRevealStep = nextStep % 2 === 0;
+      const itemNum = Math.floor((nextStep - 1) / 2) + 1;
+      pbarAdvance.textContent = isRevealStep ? `Reveal Item ${itemNum}` : `Show Item ${itemNum}`;
       pbarAdvance.disabled = false;
     } else if (state.current === slides.length - 1) {
       pbarAdvance.textContent = 'End';
@@ -4098,6 +4280,7 @@ function renderQuestionsTab() {
             <button class="btn btn-sm" data-add="ranking">+ Ranking</button>
             <button class="btn btn-sm" data-add="guess_data">+ Guess the Data</button>
             <button class="btn btn-sm" data-add="tiebreaker">+ Tiebreaker</button>
+            <button class="btn btn-sm" data-add="higher_lower">+ Higher / Lower</button>
           </div>
           <div class="q-list-add-label" style="margin-top:10px;">Content slides</div>
           <div class="q-list-add">
@@ -4188,6 +4371,7 @@ function makeBlankQuestion(type) {
     case 'ranking': return { ...base, items: [{ name: '', stat: '' }, { name: '', stat: '' }, { name: '', stat: '' }], source: '' };
     case 'guess_data': return { ...base, text: '', answer: '', chartData: [] };
     case 'tiebreaker': return { ...base, text: '', answer: null, unit: '' };
+    case 'higher_lower': return { ...base, text: '', startPct: null, items: [{ answer: '', pct: null }, { answer: '', pct: null }] };
     case 'content_heading_text': return { id, type, heading: '', text: '', center: false, host_notes: '' };
     case 'content_heading_image_text': return { id, type, heading: '', text: '', imageUrl: null, imageSide: 'left', host_notes: '' };
     case 'content_image': return { id, type, imageUrl: null, host_notes: '' };
@@ -4218,6 +4402,7 @@ function renderQuestionEditor() {
       case 'ranking': body = editorRanking(q); break;
       case 'guess_data': body = editorGuessData(q); break;
       case 'tiebreaker': body = editorTiebreaker(q); break;
+      case 'higher_lower': body = editorHigherLower(q); break;
     }
   }
 
@@ -4737,6 +4922,27 @@ function downscaleImageContain(file, maxDim = 1280, quality = 0.85) {
   });
 }
 
+
+function editorHigherLower(q) {
+  if (!q.items) q.items = [];
+  const items = q.items;
+  const rows = items.map((it, i) => `
+    <div style="display:grid;grid-template-columns:1fr 80px 28px;gap:6px;align-items:center;margin-bottom:6px">
+      <input class="form-input" placeholder="Answer" value="${escHtml(it.answer||'')}" data-hl-ans="${i}">
+      <input class="form-input" type="number" placeholder="%" value="${it.pct != null ? it.pct : ''}" data-hl-pct="${i}" style="text-align:center">
+      <button class="btn btn-sm btn-danger" data-hl-del="${i}" style="padding:4px 8px">✕</button>
+    </div>`).join('');
+  return `
+    <div class="form-row">
+      <label class="form-label">Starting %</label>
+      <input class="form-input" type="number" id="qe-hl-start" value="${q.startPct != null ? q.startPct : ''}" placeholder="e.g. 8">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Items (answer + actual %)</label>
+      ${rows}
+      <button class="btn btn-sm" id="qe-hl-add">+ Add Item</button>
+    </div>`;
+}
 function attachTypeListeners(q) {
   if (isContentType(q.type)) { attachContentEditorListeners(q); return; }
   if (q.type === 'two_choice') {
@@ -4870,6 +5076,29 @@ function attachTypeListeners(q) {
     const unit = document.getElementById('qe-tb-unit');
     if (ans) ans.addEventListener('input', e => { q.answer = e.target.value === '' ? null : parseFloat(e.target.value); });
     if (unit) unit.addEventListener('input', e => { q.unit = e.target.value; });
+  }
+  if (q.type === 'higher_lower') {
+    const startInp = document.getElementById('qe-hl-start');
+    if (startInp) startInp.addEventListener('input', e => { q.startPct = e.target.value === '' ? null : parseFloat(e.target.value); });
+    document.querySelectorAll('[data-hl-ans]').forEach(inp => {
+      inp.addEventListener('input', () => { q.items[parseInt(inp.dataset.hlAns)].answer = inp.value; });
+    });
+    document.querySelectorAll('[data-hl-pct]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        q.items[parseInt(inp.dataset.hlPct)].pct = inp.value === '' ? null : parseFloat(inp.value);
+      });
+    });
+    document.querySelectorAll('[data-hl-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        q.items.splice(parseInt(btn.dataset.hlDel), 1);
+        renderQuestionEditor();
+      });
+    });
+    const addBtn = document.getElementById('qe-hl-add');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      q.items.push({ answer: '', pct: null });
+      renderQuestionEditor();
+    });
   }
 }
 
