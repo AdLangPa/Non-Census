@@ -55,6 +55,42 @@
       "answer": 56,
       "note": "Atlantic Canadians felt strongest with 62% wanting to end it.",
       "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
+      "id": "q_muixznatsl3",
+      "type": "ranking",
+      "text": "Other than Canada, what country do you think is the most \"Canadian\"?",
+      "items": [
+        {
+          "name": "Great Britain",
+          "stat": "20"
+        },
+        {
+          "name": "United States",
+          "stat": "17"
+        },
+        {
+          "name": "Australia",
+          "stat": "16"
+        },
+        {
+          "name": "New Zealand",
+          "stat": "11"
+        },
+        {
+          "name": "Sweden",
+          "stat": "6"
+        },
+        {
+          "name": "Norway",
+          "stat": "5"
+        },
+        {
+          "name": "Russia",
+          "stat": "2"
+        }
+      ],
+      "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
 }
