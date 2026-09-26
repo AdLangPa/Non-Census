@@ -2416,66 +2416,40 @@ function renderHigherLower(q) {
   }).join('');
 
   const itemsHtml = items.map((it, i) => {
-    const basePct = i === 0 ? (q.startPct != null ? q.startPct : '?') : (items[i-1].pct != null ? items[i-1].pct : '?');
-    const dir = it.pct != null && basePct !== '?' ? (it.pct > basePct ? '▲ HIGHER' : '▼ LOWER') : '?';
     return `<div class="q-hl-item-card" data-hl-item="${i}" style="display:none">
-      <div class="q-hl-baseline-wrap">
-        <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
-      </div>
       <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
       <div class="q-hl-buttons">
         <div class="q-hl-btn">▲ HIGHER</div>
         <div class="q-hl-btn">▼ LOWER</div>
       </div>
-      <div class="q-hl-dir-result">${escHtml(dir)}</div>
       <div class="q-hl-actual">${it.pct != null ? escHtml(String(it.pct)) + '%' : '?'}</div>
     </div>`;
   }).join('');
 
   return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
     <div class="q-hl-current">
-      <div class="q-hl-start-wrap" data-hl-start>
-        <div class="q-hl-start-label">STARTING POINT</div>
-        <div class="q-hl-start-pct">${escHtml(String(startPct))}%</div>
-      </div>
       ${itemsHtml}
     </div>
     ${renderSourceStrip(q)}`;
 }
 
-// step: 0=start shown, 1=item0 revealed, 2=item0 in history+item1 shown, 3=item1 revealed...
+// step: -1=all hidden, 0=item0 unresolved, 1=item0 revealed, 2=item1 unresolved, 3=item1 revealed...
 function applyHigherLowerState(slide, step) {
   const items = slide.querySelectorAll('.q-hl-item-card');
-  const histItems = slide.querySelectorAll('.q-hl-history-item');
-  const startEl = slide.querySelector('[data-hl-start]');
-  const total = items.length;
 
-  // step 0: show start wrap, hide all items
-  // even step > 0: show item at index (step/2 - 1)... wait:
-  // step=1: item 0 revealed, step=2: item 1 shown, step=3: item 1 revealed...
-  // Actually: step=2i means show item i (0-indexed) unrevealed; step=2i+1 means item i revealed
-  // step=0: show start
+  if (step < 0) {
+    items.forEach(card => { card.style.display = 'none'; card.classList.remove('revealed'); });
+    return;
+  }
 
-  // step=0: start; step=1: item0 unresolved; step=2: item0 revealed; step=3: item1 unresolved; etc.
-  const itemIdx = step === 0 ? -1 : Math.floor((step - 1) / 2); // which item is current (-1=none)
-  const isRevealed = step > 0 && (step % 2 === 0); // even step (>=2) = current item revealed
+  // step=2i: show item i unresolved; step=2i+1: item i revealed
+  const itemIdx = Math.floor(step / 2);
+  const isRevealed = step % 2 === 1;
 
-  // Start wrap
-  if (startEl) startEl.style.display = (step === 0) ? '' : 'none';
-
-  // Item cards
   items.forEach((card, i) => {
     const isCurrent = i === itemIdx;
     card.style.display = isCurrent ? '' : 'none';
     card.classList.toggle('revealed', isCurrent && isRevealed);
-  });
-
-  // History items: show items 0..histCount-1
-  // When item is revealed (odd step), it's still shown in place — not in history yet
-  // When next even step, it moves to history
-  const inHistory = isRevealed ? itemIdx : itemIdx; // same — only items BEFORE current are in history
-  histItems.forEach((item, i) => {
-    item.style.display = i < itemIdx ? '' : 'none';
   });
 }
 
@@ -3015,12 +2989,19 @@ function applyRevealedClasses() {
     if (!s.classList.contains('q-slide')) return;
     const wasRevealed = s.classList.contains('revealed');
     const rankList = s.querySelector('.q-rank-stage');
+    const hlStage = s.querySelector('.q-hl-current');
     if (rankList) {
       // Ranking: state.revealed[k] is a count (0..N); slide-level 'revealed' only when full
       const count = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
       const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
       applyRankingState(s, count);
       s.classList.toggle('revealed', count >= total && total > 0);
+    } else if (hlStage) {
+      const step = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : -1;
+      const hlItems = hlStage.querySelectorAll('.q-hl-item-card');
+      const maxStep = hlItems.length * 2 - 1;
+      applyHigherLowerState(s, step);
+      s.classList.toggle('revealed', step >= maxStep && maxStep >= 0);
     } else {
       s.classList.toggle('revealed', !!(k && state.revealed[k]));
     }
@@ -3062,8 +3043,8 @@ function handleAdvance() {
     } else if (hlStage) {
       const items = hlStage.querySelectorAll('.q-hl-item-card');
       const total = items.length;
-      const maxStep = total * 2;
-      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      const maxStep = total * 2 - 1; // last step = last item revealed
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : -1;
       if (cur < maxStep) {
         const nextStep = cur + 1;
         if (k) state.revealed[k] = nextStep;
@@ -3113,12 +3094,12 @@ function handleRetreat() {
         return;
       }
     } else if (hlStage2) {
-      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
-      if (cur > 0) {
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : -1;
+      if (cur >= 0) {
         const nextStep = cur - 1;
-        if (nextStep === 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextStep;
+        if (nextStep < 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextStep;
         slide.classList.remove('revealed');
-        applyHigherLowerState(slide, nextStep);
+        applyHigherLowerState(slide, nextStep < 0 ? -1 : nextStep);
         refitSlideQuestionText(slide);
         updateHint();
         updatePresenterSurface();
@@ -3660,13 +3641,13 @@ function updatePresenterSurface() {
     }
   } else if (hlStage3) {
     const hlItems = hlStage3.querySelectorAll('.q-hl-item-card');
-    const maxStepHL = hlItems.length * 2;
+    const maxStepHL = hlItems.length * 2 - 1;
     const k2 = slideKey(state.current);
-    const curStepHL = (k2 && typeof state.revealed[k2] === 'number') ? state.revealed[k2] : 0;
+    const curStepHL = (k2 && typeof state.revealed[k2] === 'number') ? state.revealed[k2] : -1;
     if (curStepHL < maxStepHL) {
       const nextStep = curStepHL + 1;
-      const isRevealStep = nextStep % 2 === 0;
-      const itemNum = Math.floor((nextStep - 1) / 2) + 1;
+      const isRevealStep = nextStep % 2 === 1; // odd steps reveal
+      const itemNum = Math.floor(nextStep / 2) + 1;
       pbarAdvance.textContent = isRevealStep ? `Reveal Item ${itemNum}` : `Show Item ${itemNum}`;
       pbarAdvance.disabled = false;
     } else if (state.current === slides.length - 1) {
