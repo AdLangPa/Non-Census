@@ -104,6 +104,14 @@
         }
       ],
       "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
+      "id": "q_muiyzsjv312",
+      "type": "guess_pct",
+      "text": "What percentage of adults have 250 or more unread in emails in their main personal inbox?",
+      "answer": 11,
+      "note": "",
+      "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
 }
