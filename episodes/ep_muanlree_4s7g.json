@@ -24,6 +24,14 @@
   ],
   "questions": [
     {
+      "id": "q_muixtzth2sd",
+      "type": "guess_pct",
+      "text": "What percentage of Canadians want to get rid of Daylight Savings Time?",
+      "answer": 56,
+      "note": "Atlantic Canadians felt strongest with 62% wanting to end it.",
+      "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
       "id": "q_muivlw9mhax",
       "type": "higher_lower",
       "text": "In the last 12 months, what percentage of Canadians have...",
@@ -46,14 +54,6 @@
           "pct": 7
         }
       ],
-      "source": "YouGov Canada, August 2026, n 1,005"
-    },
-    {
-      "id": "q_muixtzth2sd",
-      "type": "guess_pct",
-      "text": "What percentage of Canadians want to get rid of Daylight Savings Time?",
-      "answer": 56,
-      "note": "Atlantic Canadians felt strongest with 62% wanting to end it.",
       "source": "YouGov Canada, August 2026, n 1,005"
     },
     {
@@ -88,6 +88,34 @@
         {
           "name": "Russia",
           "stat": "2"
+        }
+      ],
+      "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
+      "id": "q_muiy4z9r1ei",
+      "type": "guess_breakdown",
+      "text": "How often do you lie at the self-checkout?",
+      "options": [
+        {
+          "label": "Never",
+          "pct": 69
+        },
+        {
+          "label": "Occasionally",
+          "pct": 16
+        },
+        {
+          "label": "Rarely",
+          "pct": 10
+        },
+        {
+          "label": "Most of the time",
+          "pct": 4
+        },
+        {
+          "label": "Always",
+          "pct": 2
         }
       ],
       "source": "YouGov Canada, August 2026, n 1,005"
