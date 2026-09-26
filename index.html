@@ -69,13 +69,12 @@ html, body {
 /* Halftone + texture utilities — used throughout */
 /* halftone utilities removed — Cold Intelligence uses grid texture */
 
-/* Page-level grid texture */
+/* Page-level texture: grid + dots + scattered maple leaves (1 in 5) */
 body::before {
   content: ''; position: fixed; inset: 0; pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(21,26,29,0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(21,26,29,0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-image: url("data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><circle cx="0" cy="0" r="1.2" fill="%23151a1d"/><circle cx="48" cy="0" r="1.2" fill="%23151a1d"/><circle cx="96" cy="0" r="1.2" fill="%23151a1d"/><circle cx="192" cy="0" r="1.2" fill="%23151a1d"/><circle cx="0" cy="48" r="1.2" fill="%23151a1d"/><circle cx="96" cy="48" r="1.2" fill="%23151a1d"/><circle cx="144" cy="48" r="1.2" fill="%23151a1d"/><circle cx="192" cy="48" r="1.2" fill="%23151a1d"/><circle cx="0" cy="96" r="1.2" fill="%23151a1d"/><circle cx="48" cy="96" r="1.2" fill="%23151a1d"/><circle cx="96" cy="96" r="1.2" fill="%23151a1d"/><circle cx="144" cy="96" r="1.2" fill="%23151a1d"/><circle cx="0" cy="144" r="1.2" fill="%23151a1d"/><circle cx="48" cy="144" r="1.2" fill="%23151a1d"/><circle cx="144" cy="144" r="1.2" fill="%23151a1d"/><circle cx="192" cy="144" r="1.2" fill="%23151a1d"/><circle cx="48" cy="192" r="1.2" fill="%23151a1d"/><circle cx="96" cy="192" r="1.2" fill="%23151a1d"/><circle cx="144" cy="192" r="1.2" fill="%23151a1d"/><circle cx="192" cy="192" r="1.2" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(144,0) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(48,48) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(192,96) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(96,144) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(0,192) scale(0.55)" fill="%23151a1d"/></svg>");
+  background-size: 240px 240px;
+  opacity: 0.18;
   z-index: 0;
 }
 
@@ -597,10 +596,7 @@ body::before {
   padding: 36px 72px 60px;
   gap: 12px;
 }
-.q-hl-history {
-  display: flex; flex-direction: column; gap: 5px;
-  width: 100%; flex: 0 0 auto;
-}
+.q-hl-history { display: none !important; }
 .q-hl-history-item {
   display: grid; grid-template-columns: 1fr auto auto;
   align-items: center; gap: 16px;
@@ -2424,7 +2420,6 @@ function renderHigherLower(q) {
     const dir = it.pct != null && basePct !== '?' ? (it.pct > basePct ? '▲ HIGHER' : '▼ LOWER') : '?';
     return `<div class="q-hl-item-card" data-hl-item="${i}" style="display:none">
       <div class="q-hl-baseline-wrap">
-        <div class="q-hl-baseline-label">BASELINE</div>
         <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
       </div>
       <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
@@ -2439,7 +2434,6 @@ function renderHigherLower(q) {
 
   return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
     <div class="q-hl-current">
-      <div class="q-hl-history">${historyHtml}</div>
       <div class="q-hl-start-wrap" data-hl-start>
         <div class="q-hl-start-label">STARTING POINT</div>
         <div class="q-hl-start-pct">${escHtml(String(startPct))}%</div>
