@@ -32,31 +32,6 @@
       "source": "YouGov Canada, August 2026, n 1,005"
     },
     {
-      "id": "q_muivlw9mhax",
-      "type": "higher_lower",
-      "text": "In the last 12 months, what percentage of Canadians have...",
-      "startPct": 8,
-      "items": [
-        {
-          "answer": "Shoplifted",
-          "pct": 4
-        },
-        {
-          "answer": "Got drunk and bought something they didn't need online",
-          "pct": 11
-        },
-        {
-          "answer": "Lied to get out of plans",
-          "pct": 17
-        },
-        {
-          "answer": "Returned clothing to the store after wearing it",
-          "pct": 7
-        }
-      ],
-      "source": "YouGov Canada, August 2026, n 1,005"
-    },
-    {
       "id": "q_muixznatsl3",
       "type": "ranking",
       "text": "Other than Canada, what country do you think is the most \"Canadian\"?",
@@ -118,6 +93,16 @@
           "pct": 2
         }
       ],
+      "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
+      "id": "q_muiycvs5kk3",
+      "type": "over_under",
+      "text": "What percentage of Canadians have shoplifted in the last 12 months?",
+      "number": 7,
+      "correct": "under",
+      "actual": 4,
+      "note": "",
       "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
