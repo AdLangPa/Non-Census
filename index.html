@@ -454,9 +454,9 @@ body::before {
   text-align: right;
 }
 .q-source-logo {
-  height: 18px; width: auto;
+  height: 42px; width: auto;
   object-fit: contain;
-  opacity: 0.6;
+  opacity: 0.75;
   flex-shrink: 0;
 }
 
@@ -661,8 +661,13 @@ body::before {
   padding: 12px 40px; border: 2px solid var(--gray-rule);
   background: var(--paper-bright); color: var(--ink);
   opacity: 0.7;
+  transition: opacity 0.35s ease, background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
-.q-hl-item-card.revealed .q-hl-buttons { opacity: 0.4; }
+.q-hl-item-card.revealed .q-hl-btn { opacity: 0.18; }
+.q-hl-item-card.revealed .q-hl-btn.correct {
+  opacity: 1;
+  background: var(--ink); color: var(--paper-bright); border-color: var(--ink);
+}
 .q-hl-actual {
   font-family: var(--mono); font-size: 96px; font-weight: 600;
   color: var(--brick); line-height: 0.9;
@@ -783,7 +788,7 @@ body::before {
   opacity: 0; transform: translateX(-4px);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
-.revealed .q-break-pct { opacity: 1; transform: translateX(0); }
+.q-break-row.break-revealed .q-break-pct { opacity: 1; transform: translateX(0); }
 
 /* ─────── RANKING ─────── */
 /* Scatter tiles — pre-reveal items floating in stage */
@@ -2412,12 +2417,13 @@ function renderHigherLower(q) {
 
   const itemsHtml = items.map((it, i) => {
     const basePct = i === 0 ? (q.startPct != null ? q.startPct : '?') : (items[i-1].pct != null ? items[i-1].pct : '?');
-    return `<div class="q-hl-item-card" data-hl-item="${i}" style="display:none">
+    const correctDir = (it.pct != null && basePct !== '?') ? (it.pct > basePct ? 'higher' : 'lower') : '';
+    return `<div class="q-hl-item-card" data-hl-item="${i}" data-hl-correct="${correctDir}" style="display:none">
       <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
       <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
       <div class="q-hl-buttons">
-        <div class="q-hl-btn">▲ HIGHER</div>
-        <div class="q-hl-btn">▼ LOWER</div>
+        <div class="q-hl-btn" data-hl-dir="higher">▲ HIGHER</div>
+        <div class="q-hl-btn" data-hl-dir="lower">▼ LOWER</div>
       </div>
       <div class="q-hl-actual">${it.pct != null ? escHtml(String(it.pct)) + '%' : '?'}</div>
     </div>`;
@@ -2428,6 +2434,12 @@ function renderHigherLower(q) {
       ${itemsHtml}
     </div>
     ${renderSourceStrip(q)}`;
+}
+
+function applyBreakdownState(slide, count) {
+  slide.querySelectorAll('.q-break-row').forEach((row, i) => {
+    row.classList.toggle('break-revealed', i < count);
+  });
 }
 
 // step: -1=all hidden, 0=item0 unresolved, 1=item0 revealed, 2=item1 unresolved, 3=item1 revealed...
@@ -2446,7 +2458,18 @@ function applyHigherLowerState(slide, step) {
   items.forEach((card, i) => {
     const isCurrent = i === itemIdx;
     card.style.display = isCurrent ? '' : 'none';
+    const wasRevealed = card.classList.contains('revealed');
     card.classList.toggle('revealed', isCurrent && isRevealed);
+    // Mark correct/incorrect buttons on reveal
+    if (isCurrent && isRevealed && !wasRevealed) {
+      const correctDir = card.dataset.hlCorrect;
+      card.querySelectorAll('.q-hl-btn').forEach(btn => {
+        btn.classList.toggle('correct', btn.dataset.hlDir === correctDir);
+      });
+    }
+    if (!isRevealed || !isCurrent) {
+      card.querySelectorAll('.q-hl-btn').forEach(btn => btn.classList.remove('correct'));
+    }
   });
 }
 
@@ -2673,7 +2696,7 @@ function renderGuessBreakdown(q) {
   const opts = q.options || [];
   return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
     <div class="q-break-rows">
-      ${opts.map(o => `<div class="q-break-row">
+      ${opts.map((o, i) => `<div class="q-break-row" data-break-idx="${i}">
         <div class="q-break-label">${safeRich(o.label || '')}</div>
         <div class="q-break-pct">${o.pct != null ? escHtml(o.pct) + '%' : ''}</div>
       </div>`).join('')}
@@ -2993,6 +3016,11 @@ function applyRevealedClasses() {
       const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
       applyRankingState(s, count);
       s.classList.toggle('revealed', count >= total && total > 0);
+    } else if (s.classList.contains('q-break-slide')) {
+      const count = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
+      const total = s.querySelectorAll('.q-break-row').length;
+      applyBreakdownState(s, count);
+      s.classList.toggle('revealed', count >= total && total > 0);
     } else if (hlStage) {
       const step = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : -1;
       const hlItems = hlStage.querySelectorAll('.q-hl-item-card');
@@ -3037,6 +3065,20 @@ function handleAdvance() {
         return;
       }
       // already fully revealed → fall through to advance
+    } else if (slide.classList.contains('q-break-slide')) {
+      const rows = slide.querySelectorAll('.q-break-row');
+      const total = rows.length;
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      if (cur < total) {
+        const nextCount = cur + 1;
+        if (k) state.revealed[k] = nextCount;
+        applyBreakdownState(slide, nextCount);
+        if (nextCount >= total) { slide.classList.add('revealed'); refitSlideQuestionText(slide); }
+        updateHint();
+        updatePresenterSurface();
+        broadcastState();
+        return;
+      }
     } else if (hlStage) {
       const items = hlStage.querySelectorAll('.q-hl-item-card');
       const total = items.length;
@@ -3084,6 +3126,19 @@ function handleRetreat() {
         }
         slide.classList.remove('revealed');
         applyRankingState(slide, nextCount);
+        refitSlideQuestionText(slide);
+        updateHint();
+        updatePresenterSurface();
+        broadcastState();
+        return;
+      }
+    } else if (slide.classList.contains('q-break-slide')) {
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
+      if (cur > 0) {
+        const nextCount = cur - 1;
+        if (nextCount === 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextCount;
+        slide.classList.remove('revealed');
+        applyBreakdownState(slide, nextCount);
         refitSlideQuestionText(slide);
         updateHint();
         updatePresenterSurface();
@@ -3622,7 +3677,23 @@ function updatePresenterSurface() {
   // Advance button label
   const rankList = cur ? cur.querySelector('.q-rank-stage') : null;
   const hlStage3 = cur ? cur.querySelector('.q-hl-current') : null;
-  if (rankList) {
+  const isBreakSlide = cur && cur.classList.contains('q-break-slide');
+  if (isBreakSlide) {
+    const rows = cur.querySelectorAll('.q-break-row');
+    const total = rows.length;
+    const k = slideKey(state.current);
+    const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
+    if (revealedCount < total) {
+      pbarAdvance.textContent = `Reveal ${revealedCount + 1} of ${total}`;
+      pbarAdvance.disabled = false;
+    } else if (state.current === slides.length - 1) {
+      pbarAdvance.textContent = 'End';
+      pbarAdvance.disabled = true;
+    } else {
+      pbarAdvance.textContent = 'Next →';
+      pbarAdvance.disabled = false;
+    }
+  } else if (rankList) {
     const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
     const k = slideKey(state.current);
     const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
