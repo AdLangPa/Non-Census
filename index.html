@@ -629,19 +629,10 @@ body::before {
   letter-spacing: 0.25em; color: var(--steel); text-transform: uppercase;
 }
 .q-hl-baseline-pct {
-  font-family: var(--mono); font-size: 96px; font-weight: 600;
-  color: var(--ink); line-height: 0.9;
-  position: relative; display: inline-block;
+  font-family: var(--mono); font-size: 28px; font-weight: 500;
+  color: var(--gray-muted); line-height: 1;
+  letter-spacing: 0.04em;
 }
-.q-hl-baseline-pct::after {
-  content: '';
-  position: absolute; left: -6%; top: 50%;
-  width: 112%; height: 7px;
-  background: var(--brick); border-radius: 3px;
-  transform: rotate(-4deg) translateY(-50%);
-  opacity: 0; transition: opacity 0.25s ease 0.1s;
-}
-.q-hl-item-card.revealed .q-hl-baseline-pct::after { opacity: 1; }
 .q-hl-item-name {
   font-family: var(--sans);
   font-size: 48px; font-weight: 700;
@@ -2416,8 +2407,10 @@ function renderHigherLower(q) {
   }).join('');
 
   const itemsHtml = items.map((it, i) => {
+    const basePct = i === 0 ? (q.startPct != null ? q.startPct : '?') : (items[i-1].pct != null ? items[i-1].pct : '?');
     return `<div class="q-hl-item-card" data-hl-item="${i}" style="display:none">
       <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
+      <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
       <div class="q-hl-buttons">
         <div class="q-hl-btn">▲ HIGHER</div>
         <div class="q-hl-btn">▼ LOWER</div>
