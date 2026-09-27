@@ -1725,6 +1725,7 @@ body.audience-mode.audience-waiting #audience-waiting { display: flex; }
     <button class="pbar-btn primary" id="pbar-advance">Reveal</button>
     <button class="pbar-btn" id="pbar-next">Next →</button>
     <button class="pbar-btn" id="pbar-scores">Show Scores</button>
+    <button class="pbar-btn" id="pbar-tiebreaker" style="display:none">⚡ Tiebreaker</button>
     <button class="pbar-btn ghost" id="pbar-end">End Presenter</button>
   </div>
   <div id="presenter-main">
@@ -2089,6 +2090,8 @@ let state = {
   revealed: {},           // { [slideKey]: true } — slides that have been revealed
   showScoresInjected: false, // whether the synthetic Scores slide is currently in the deck
   showScoresAfter: -1,    // index after which the scores slide was inserted (for cleanup)
+  tiebreakerInjected: false, // whether a tiebreaker slide is currently injected
+  tiebreakerAfter: -1,   // index after which the tiebreaker slide was inserted
 };
 
 let slides = [];          // play-mode slide elements
@@ -2835,6 +2838,7 @@ function isContentType(type) { return CONTENT_TYPES.includes(type); }
 
 function buildItemSlide(ep, q) {
   if (isContentType(q.type)) return buildContentSlide(q);
+  if (q.type === 'tiebreaker') return ''; // tiebreaker slides are injected on-demand by the presenter
   return buildQuestionSlide(ep, q);
 }
 
@@ -2860,6 +2864,8 @@ function showPicker() {
   state.current = 0;
   state.revealed = {};
   state.showScoresInjected = false;
+  state.tiebreakerInjected = false;
+  state.tiebreakerAfter = -1;
 
   hintEl.style.display = 'none';
   navEl.style.display = 'none';
@@ -2957,6 +2963,8 @@ function launchGame() {
   state.phase = 'play';
   state.revealed = {};
   state.showScoresInjected = false;
+  state.tiebreakerInjected = false;
+  state.tiebreakerAfter = -1;
   buildNav();
   renderCloseSlide();
   goTo(1);
@@ -3266,6 +3274,41 @@ function showScores() {
   goTo(insertAfter + 1);
 }
 
+function showTiebreaker() {
+  if (state.phase !== 'play' || !currentEpisode) return;
+  // If already on a tiebreaker slide, do nothing
+  if (slides[state.current] && slides[state.current].dataset.type === 'tiebreaker') return;
+  // Remove any existing injected tiebreaker first
+  if (state.tiebreakerInjected) removeTiebreakerSlide();
+  // Find the next unused tiebreaker question (not yet injected, or pick the first)
+  const tbQ = currentEpisode.questions.find(q => q.type === 'tiebreaker');
+  if (!tbQ) return;
+  // Build the tiebreaker slide HTML
+  const slideHtml = buildQuestionSlide(currentEpisode, tbQ);
+  const tmp = document.createElement('div');
+  tmp.innerHTML = slideHtml;
+  const newSlide = tmp.firstElementChild;
+  newSlide.dataset.type = 'tiebreaker'; // mark for easy removal
+  const cur = slides[state.current];
+  cur.insertAdjacentElement('afterend', newSlide);
+  slides = Array.from(deckEl.querySelectorAll('.slide'));
+  state.tiebreakerInjected = true;
+  state.tiebreakerAfter = state.current;
+  buildNav();
+  scaleFrames();
+  goTo(state.current + 1);
+}
+
+function removeTiebreakerSlide() {
+  const idx = slides.findIndex(s => s.dataset.type === 'tiebreaker');
+  if (idx < 0) { state.tiebreakerInjected = false; return; }
+  slides[idx].remove();
+  slides = Array.from(deckEl.querySelectorAll('.slide'));
+  state.tiebreakerInjected = false;
+  state.tiebreakerAfter = -1;
+  buildNav();
+}
+
 function removeScoresSlide() {
   const idx = slides.findIndex(s => s.dataset.type === 'scores');
   if (idx < 0) { state.showScoresInjected = false; return; }
@@ -3421,6 +3464,8 @@ function broadcastState() {
       revealed: state.revealed,
       showScoresInjected: state.showScoresInjected,
       showScoresAfter: state.showScoresAfter,
+      tiebreakerInjected: state.tiebreakerInjected,
+      tiebreakerAfter: state.tiebreakerAfter,
     }
   });
 }
@@ -3571,6 +3616,26 @@ function applyAudienceState(p) {
     slides = Array.from(deckEl.querySelectorAll('.slide'));
   }
 
+  // Handle injected tiebreaker slide (audience side)
+  const hasTb = !!deckEl.querySelector('[data-type="tiebreaker"]');
+  if (state.tiebreakerInjected && !hasTb && currentEpisode) {
+    const tbQ = currentEpisode.questions.find(q => q.type === 'tiebreaker');
+    if (tbQ) {
+      const after = slides[state.tiebreakerAfter];
+      if (after) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = buildQuestionSlide(currentEpisode, tbQ);
+        const newSlide = tmp.firstElementChild;
+        newSlide.dataset.type = 'tiebreaker';
+        after.insertAdjacentElement('afterend', newSlide);
+        slides = Array.from(deckEl.querySelectorAll('.slide'));
+      }
+    }
+  } else if (!state.tiebreakerInjected && hasTb) {
+    deckEl.querySelector('[data-type="tiebreaker"]').remove();
+    slides = Array.from(deckEl.querySelectorAll('.slide'));
+  }
+
   // Apply current slide + revealed state
   slides.forEach((s, i) => s.classList.toggle('active', i === state.current));
   applyRevealedClasses();
@@ -3589,12 +3654,14 @@ const pbarPrev = document.getElementById('pbar-prev');
 const pbarNext = document.getElementById('pbar-next');
 const pbarAdvance = document.getElementById('pbar-advance');
 const pbarScores = document.getElementById('pbar-scores');
+const pbarTiebreaker = document.getElementById('pbar-tiebreaker');
 const pbarEnd = document.getElementById('pbar-end');
 
 if (pbarPrev) pbarPrev.addEventListener('click', e => { e.stopPropagation(); handleRetreat(); });
 if (pbarNext) pbarNext.addEventListener('click', e => { e.stopPropagation(); goTo(state.current + 1); });
 if (pbarAdvance) pbarAdvance.addEventListener('click', e => { e.stopPropagation(); handleAdvance(); });
 if (pbarScores) pbarScores.addEventListener('click', e => { e.stopPropagation(); showScores(); });
+if (pbarTiebreaker) pbarTiebreaker.addEventListener('click', e => { e.stopPropagation(); showTiebreaker(); });
 if (pbarEnd) pbarEnd.addEventListener('click', e => {
   e.stopPropagation();
   if (audienceWindow && !audienceWindow.closed) audienceWindow.close();
@@ -3738,6 +3805,13 @@ function updatePresenterSurface() {
   pbarPrev.disabled = state.current <= 1;
   pbarNext.disabled = state.current >= slides.length - 1;
   pbarScores.disabled = !state.scoring || !state.contestants.length || (cur && cur.dataset.type === 'scores');
+  // Show tiebreaker button only when episode has tiebreaker questions
+  const hasTiebreakerQ = !!(currentEpisode && currentEpisode.questions.some(q => q.type === 'tiebreaker'));
+  if (pbarTiebreaker) {
+    pbarTiebreaker.style.display = hasTiebreakerQ ? '' : 'none';
+    pbarTiebreaker.disabled = !hasTiebreakerQ || (cur && cur.dataset.type === 'tiebreaker');
+    pbarTiebreaker.textContent = state.tiebreakerInjected ? '⚡ Tiebreaker (active)' : '⚡ Tiebreaker';
+  }
 
   // Scoreboard
   renderPresenterScoreboard();
