@@ -1,0 +1,26 @@
+{
+  "id": "ep_muj4oua1_y2yp",
+  "name": "Untitled Episode",
+  "framing": {
+    "title": "NON-CENSUS",
+    "logoUrl": null,
+    "tagline": "Digging into the data nobody else bothered to.",
+    "closeTitle": "Final Results.",
+    "closeBody": ""
+  },
+  "contestants": [
+    {
+      "id": "c_wfh2k",
+      "name": "",
+      "subtext": "",
+      "photoUrl": null
+    },
+    {
+      "id": "c_6r9ka",
+      "name": "",
+      "subtext": "",
+      "photoUrl": null
+    }
+  ],
+  "questions": []
+}
