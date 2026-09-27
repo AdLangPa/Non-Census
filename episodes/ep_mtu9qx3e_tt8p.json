@@ -83,6 +83,38 @@
       "answer": 7,
       "note": "The highest of any region in Canada.",
       "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
+      "id": "q_muj528dyiig",
+      "type": "ranking",
+      "text": "Which American state would Canadians most like to join us and become Canada's 11th province?",
+      "items": [
+        {
+          "name": "California",
+          "stat": "11"
+        },
+        {
+          "name": "Hawaii",
+          "stat": "11"
+        },
+        {
+          "name": "Vermont",
+          "stat": "8"
+        },
+        {
+          "name": "Florida",
+          "stat": "6"
+        },
+        {
+          "name": "New York",
+          "stat": "6"
+        },
+        {
+          "name": "Washington",
+          "stat": "5"
+        }
+      ],
+      "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
 }
