@@ -120,8 +120,8 @@
       "id": "q_muj557cexn4",
       "type": "tiebreaker",
       "text": "When asked what state they'd want to join Canada, what percentage of Canadians said <em>NONE?</em>",
-      "answer": null,
-      "unit": "",
+      "answer": 31,
+      "unit": "%",
       "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
