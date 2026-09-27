@@ -113,6 +113,14 @@
       "answer": 11,
       "note": "",
       "source": "YouGov Canada, August 2026, n 1,005"
+    },
+    {
+      "id": "q_muj7geyvxkq",
+      "type": "tiebreaker",
+      "text": "What percentage of Quebecois think toilet paper should be hung underhand?",
+      "answer": 23,
+      "unit": "%",
+      "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
 }
