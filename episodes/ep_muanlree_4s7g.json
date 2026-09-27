@@ -88,12 +88,12 @@
           "pct": 69
         },
         {
-          "label": "Occasionally",
-          "pct": 16
-        },
-        {
           "label": "Rarely",
           "pct": 10
+        },
+        {
+          "label": "Occasionally",
+          "pct": 16
         },
         {
           "label": "Most of the time",
