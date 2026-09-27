@@ -117,6 +117,25 @@
       "source": "YouGov Canada, August 2026, n 1,005"
     },
     {
+      "id": "q_muj7uqoxbgk",
+      "type": "two_choice",
+      "text": "What do people in the Prairies thinks is the more overrated tourist attraction...",
+      "label": "",
+      "options": [
+        {
+          "text": "CN Tower",
+          "pct": 20
+        },
+        {
+          "text": "West Edmonton Mall",
+          "pct": 28
+        }
+      ],
+      "correct": 1,
+      "source": "YouGov Canada, August 2026, n 1,005",
+      "host_notes": "Ontarians thought the CN Tower was more overrated, at 28%."
+    },
+    {
       "id": "q_muj557cexn4",
       "type": "tiebreaker",
       "text": "When asked what state they'd want to join Canada, what percentage of Canadians said <em>NONE?</em>",
