@@ -77,63 +77,12 @@
       "source": "YouGov Canada, August 2026, n 1,005"
     },
     {
-      "id": "q_mtu9x1chkhh",
+      "id": "q_muj4saa5g1l",
       "type": "guess_pct",
-      "text": "What percentage of Canadians purchased something online in the last 12 months while under the influence of alcohol?",
-      "answer": 11,
-      "note": "",
+      "text": "What percentage of Ontario adults think they would win in a fight against a moose?",
+      "answer": 7,
+      "note": "The highest of any region in Canada.",
       "source": "YouGov Canada, August 2026, n 1,005"
-    },
-    {
-      "id": "q_mtu9ymlqwc5",
-      "type": "over_under",
-      "text": "What percentage of Canadians think they could consider an AI chat bot a friend?",
-      "number": 10,
-      "correct": "over",
-      "actual": 16,
-      "note": "",
-      "source": "YouGov Canada, August 2026, n 1,005"
-    },
-    {
-      "id": "q_mtu8vdvuyz3",
-      "type": "ranking",
-      "text": "Which animals do Canadians feel most confident about beating up in a fight? ",
-      "items": [
-        {
-          "name": "Seagull",
-          "stat": "32%"
-        },
-        {
-          "name": "Loon",
-          "stat": "22%"
-        },
-        {
-          "name": "Canada Goose",
-          "stat": "21%"
-        },
-        {
-          "name": "Beaver",
-          "stat": "18%"
-        },
-        {
-          "name": "Seal",
-          "stat": "8%"
-        },
-        {
-          "name": "Black Bear",
-          "stat": "6%"
-        },
-        {
-          "name": "Moose",
-          "stat": "6%"
-        },
-        {
-          "name": "Polar Bear",
-          "stat": "5%"
-        }
-      ],
-      "source": "YouGov Canada, August 2026, n 1,005",
-      "host_notes": "Which, if any, of the following animals do you think you could defeat unarmed and one-on-one? Please select all that apply.\n"
     }
   ]
 }
