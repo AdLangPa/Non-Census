@@ -32,6 +32,30 @@
       "actual": 26,
       "note": "",
       "source": "YouGov Canada, September 2026, n 1,004"
+    },
+    {
+      "id": "q_mv32cjvw1p4",
+      "type": "ranking",
+      "text": "At what age should a child stop trick or treating?",
+      "items": [
+        {
+          "name": "13-14 years old",
+          "stat": "27"
+        },
+        {
+          "name": "11-12 years old",
+          "stat": "21"
+        },
+        {
+          "name": "15+ years old",
+          "stat": "20"
+        },
+        {
+          "name": "They should never stop",
+          "stat": "14"
+        }
+      ],
+      "source": "YouGov Canada, September 2026, n 1,004"
     }
   ]
 }
