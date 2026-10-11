@@ -81,6 +81,24 @@
       "answer": 6,
       "note": "",
       "source": "YouGov Canada, September 2026, n 1,004"
+    },
+    {
+      "id": "q_mv32jifzcp9",
+      "type": "two_choice",
+      "text": "Is it normal to leave something to a pet in your will/estate? What do the majority of Canadians think?",
+      "label": "",
+      "options": [
+        {
+          "text": "Yes",
+          "pct": 29
+        },
+        {
+          "text": "No",
+          "pct": 53
+        }
+      ],
+      "correct": 1,
+      "source": "YouGov Canada, September 2026, n 1,004"
     }
   ]
 }
