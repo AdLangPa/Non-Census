@@ -56,6 +56,24 @@
         }
       ],
       "source": "YouGov Canada, September 2026, n 1,004"
+    },
+    {
+      "id": "q_mv32fhkravr",
+      "type": "two_choice",
+      "text": "What percentage of Canadians left work early on a nice day at least once this summer?",
+      "label": "",
+      "options": [
+        {
+          "text": "20",
+          "pct": null
+        },
+        {
+          "text": "32",
+          "pct": null
+        }
+      ],
+      "correct": 0,
+      "source": "YouGov Canada, September 2026, n 1,004"
     }
   ]
 }
