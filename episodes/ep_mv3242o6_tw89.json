@@ -1,6 +1,6 @@
 {
   "id": "ep_mv3242o6_tw89",
-  "name": "Testisode 4",
+  "name": "Halloweenisode 4",
   "framing": {
     "title": "NON-CENSUS",
     "logoUrl": null,
@@ -86,7 +86,6 @@
       "id": "q_mv32jifzcp9",
       "type": "two_choice",
       "text": "Is it normal to leave something to a pet in your will/estate? What do the majority of Canadians think?",
-      "label": "",
       "options": [
         {
           "text": "Yes",
