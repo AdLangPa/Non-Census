@@ -42,7 +42,7 @@
     {
       "id": "q_mvtpw75z4s8",
       "type": "multiple_choice",
-      "text": "",
+      "text": "According to UK CMI/YouGov research, what percentage of managers entered management without formal management and leadership training?",
       "options": [
         {
           "text": "22",
@@ -62,7 +62,7 @@
         }
       ],
       "correct": 3,
-      "source": "According to UK CMI/YouGov research, what % entered management without formal management and leadership training?",
+      "source": "",
       "host_notes": "CMI and YouGov referred to these people as \"accidental managers\""
     },
     {
