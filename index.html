@@ -69,12 +69,13 @@ html, body {
 /* Halftone + texture utilities — used throughout */
 /* halftone utilities removed — Cold Intelligence uses grid texture */
 
-/* Page-level texture: grid + dots + scattered maple leaves (1 in 5) */
+/* Page-level grid texture */
 body::before {
   content: ''; position: fixed; inset: 0; pointer-events: none;
-  background-image: url("data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><circle cx="0" cy="0" r="1.2" fill="%23151a1d"/><circle cx="48" cy="0" r="1.2" fill="%23151a1d"/><circle cx="96" cy="0" r="1.2" fill="%23151a1d"/><circle cx="192" cy="0" r="1.2" fill="%23151a1d"/><circle cx="0" cy="48" r="1.2" fill="%23151a1d"/><circle cx="96" cy="48" r="1.2" fill="%23151a1d"/><circle cx="144" cy="48" r="1.2" fill="%23151a1d"/><circle cx="192" cy="48" r="1.2" fill="%23151a1d"/><circle cx="0" cy="96" r="1.2" fill="%23151a1d"/><circle cx="48" cy="96" r="1.2" fill="%23151a1d"/><circle cx="96" cy="96" r="1.2" fill="%23151a1d"/><circle cx="144" cy="96" r="1.2" fill="%23151a1d"/><circle cx="0" cy="144" r="1.2" fill="%23151a1d"/><circle cx="48" cy="144" r="1.2" fill="%23151a1d"/><circle cx="144" cy="144" r="1.2" fill="%23151a1d"/><circle cx="192" cy="144" r="1.2" fill="%23151a1d"/><circle cx="48" cy="192" r="1.2" fill="%23151a1d"/><circle cx="96" cy="192" r="1.2" fill="%23151a1d"/><circle cx="144" cy="192" r="1.2" fill="%23151a1d"/><circle cx="192" cy="192" r="1.2" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(144,0) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(48,48) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(192,96) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(96,144) scale(0.55)" fill="%23151a1d"/><path d="M0,-8 L-1.5,-4.5 L-5,-5.5 L-3,-2.5 L-8,-1 L-4.5,0.5 L-6,4 L-2.5,3 L-3,8 L0,6 L3,8 L2.5,3 L6,4 L4.5,0.5 L8,-1 L3,-2.5 L5,-5.5 L1.5,-4.5 Z" transform="translate(0,192) scale(0.55)" fill="%23151a1d"/></svg>");
-  background-size: 240px 240px;
-  opacity: 0.18;
+  background-image:
+    linear-gradient(to right, rgba(21,26,29,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21,26,29,0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
   z-index: 0;
 }
 
@@ -454,9 +455,9 @@ body::before {
   text-align: right;
 }
 .q-source-logo {
-  height: 42px; width: auto;
+  height: 18px; width: auto;
   object-fit: contain;
-  opacity: 0.75;
+  opacity: 0.6;
   flex-shrink: 0;
 }
 
@@ -502,6 +503,10 @@ body::before {
 .revealed .q-option:not(.winner) { opacity: 0.55; }
 .revealed .q-option-pct { opacity: 1; transform: translateY(0); }
 .revealed .q-option.winner .q-option-pct { color: var(--brick); }
+.q-option-text-sm { font-size: 22px !important; }
+.q-options-mc { gap: 12px; }
+.q-options-mc .q-option { padding: 18px 24px; }
+.q-options-mc .q-option-pct { font-size: 48px; }
 .q-slide.revealed::after { content: none; }
 .q-slide .reveal-burst { display: none; }
 .q-slide.revealed > .slide-frame > .reveal-burst { display: none; }
@@ -596,7 +601,10 @@ body::before {
   padding: 36px 72px 60px;
   gap: 12px;
 }
-.q-hl-history { display: none !important; }
+.q-hl-history {
+  display: flex; flex-direction: column; gap: 5px;
+  width: 100%; flex: 0 0 auto;
+}
 .q-hl-history-item {
   display: grid; grid-template-columns: 1fr auto auto;
   align-items: center; gap: 16px;
@@ -629,14 +637,19 @@ body::before {
   letter-spacing: 0.25em; color: var(--steel); text-transform: uppercase;
 }
 .q-hl-baseline-pct {
-  font-family: var(--mono); font-size: 88px; font-weight: 600;
-  color: var(--brick); line-height: 0.95;
-  letter-spacing: 0.02em;
-  transition: color 0.4s ease;
+  font-family: var(--mono); font-size: 96px; font-weight: 600;
+  color: var(--ink); line-height: 0.9;
+  position: relative; display: inline-block;
 }
-.q-hl-item-card.revealed .q-hl-baseline-pct {
-  color: var(--ink);
+.q-hl-baseline-pct::after {
+  content: '';
+  position: absolute; left: -6%; top: 50%;
+  width: 112%; height: 7px;
+  background: var(--brick); border-radius: 3px;
+  transform: rotate(-4deg) translateY(-50%);
+  opacity: 0; transition: opacity 0.25s ease 0.1s;
 }
+.q-hl-item-card.revealed .q-hl-baseline-pct::after { opacity: 1; }
 .q-hl-item-name {
   font-family: var(--sans);
   font-size: 48px; font-weight: 700;
@@ -661,13 +674,8 @@ body::before {
   padding: 12px 40px; border: 2px solid var(--gray-rule);
   background: var(--paper-bright); color: var(--ink);
   opacity: 0.7;
-  transition: opacity 0.35s ease, background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
-.q-hl-item-card.revealed .q-hl-btn { opacity: 0.18; }
-.q-hl-item-card.revealed .q-hl-btn.correct {
-  opacity: 1;
-  background: var(--ink); color: var(--paper-bright); border-color: var(--ink);
-}
+.q-hl-item-card.revealed .q-hl-buttons { opacity: 0.4; }
 .q-hl-actual {
   font-family: var(--mono); font-size: 96px; font-weight: 600;
   color: var(--brick); line-height: 0.9;
@@ -788,7 +796,7 @@ body::before {
   opacity: 0; transform: translateX(-4px);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
-.q-break-row.break-revealed .q-break-pct { opacity: 1; transform: translateX(0); }
+.revealed .q-break-pct { opacity: 1; transform: translateX(0); }
 
 /* ─────── RANKING ─────── */
 /* Scatter tiles — pre-reveal items floating in stage */
@@ -1725,7 +1733,6 @@ body.audience-mode.audience-waiting #audience-waiting { display: flex; }
     <button class="pbar-btn primary" id="pbar-advance">Reveal</button>
     <button class="pbar-btn" id="pbar-next">Next →</button>
     <button class="pbar-btn" id="pbar-scores">Show Scores</button>
-    <button class="pbar-btn" id="pbar-tiebreaker" style="display:none">⚡ Tiebreaker</button>
     <button class="pbar-btn ghost" id="pbar-end">End Presenter</button>
   </div>
   <div id="presenter-main">
@@ -2090,8 +2097,6 @@ let state = {
   revealed: {},           // { [slideKey]: true } — slides that have been revealed
   showScoresInjected: false, // whether the synthetic Scores slide is currently in the deck
   showScoresAfter: -1,    // index after which the scores slide was inserted (for cleanup)
-  tiebreakerInjected: false, // whether a tiebreaker slide is currently injected
-  tiebreakerAfter: -1,   // index after which the tiebreaker slide was inserted
 };
 
 let slides = [];          // play-mode slide elements
@@ -2420,59 +2425,67 @@ function renderHigherLower(q) {
 
   const itemsHtml = items.map((it, i) => {
     const basePct = i === 0 ? (q.startPct != null ? q.startPct : '?') : (items[i-1].pct != null ? items[i-1].pct : '?');
-    const correctDir = (it.pct != null && basePct !== '?') ? (it.pct > basePct ? 'higher' : 'lower') : '';
-    return `<div class="q-hl-item-card" data-hl-item="${i}" data-hl-correct="${correctDir}" style="display:none">
-      <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
-      <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
-      <div class="q-hl-buttons">
-        <div class="q-hl-btn" data-hl-dir="higher">▲ HIGHER</div>
-        <div class="q-hl-btn" data-hl-dir="lower">▼ LOWER</div>
+    const dir = it.pct != null && basePct !== '?' ? (it.pct > basePct ? '▲ HIGHER' : '▼ LOWER') : '?';
+    return `<div class="q-hl-item-card" data-hl-item="${i}" style="display:none">
+      <div class="q-hl-baseline-wrap">
+        <div class="q-hl-baseline-label">BASELINE</div>
+        <div class="q-hl-baseline-pct">${escHtml(String(basePct))}%</div>
       </div>
+      <div class="q-hl-item-name">${escHtml(it.answer || '')}</div>
+      <div class="q-hl-buttons">
+        <div class="q-hl-btn">▲ HIGHER</div>
+        <div class="q-hl-btn">▼ LOWER</div>
+      </div>
+      <div class="q-hl-dir-result">${escHtml(dir)}</div>
       <div class="q-hl-actual">${it.pct != null ? escHtml(String(it.pct)) + '%' : '?'}</div>
     </div>`;
   }).join('');
 
   return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
     <div class="q-hl-current">
+      <div class="q-hl-history">${historyHtml}</div>
+      <div class="q-hl-start-wrap" data-hl-start>
+        <div class="q-hl-start-label">STARTING POINT</div>
+        <div class="q-hl-start-pct">${escHtml(String(startPct))}%</div>
+      </div>
       ${itemsHtml}
     </div>
     ${renderSourceStrip(q)}`;
 }
 
-function applyBreakdownState(slide, count) {
-  slide.querySelectorAll('.q-break-row').forEach((row, i) => {
-    row.classList.toggle('break-revealed', i < count);
-  });
-}
-
-// step: -1=all hidden, 0=item0 unresolved, 1=item0 revealed, 2=item1 unresolved, 3=item1 revealed...
+// step: 0=start shown, 1=item0 revealed, 2=item0 in history+item1 shown, 3=item1 revealed...
 function applyHigherLowerState(slide, step) {
   const items = slide.querySelectorAll('.q-hl-item-card');
+  const histItems = slide.querySelectorAll('.q-hl-history-item');
+  const startEl = slide.querySelector('[data-hl-start]');
+  const total = items.length;
 
-  if (step < 0) {
-    items.forEach(card => { card.style.display = 'none'; card.classList.remove('revealed'); });
-    return;
-  }
+  // step 0: show start wrap, hide all items
+  // even step > 0: show item at index (step/2 - 1)... wait:
+  // step=1: item 0 revealed, step=2: item 1 shown, step=3: item 1 revealed...
+  // Actually: step=2i means show item i (0-indexed) unrevealed; step=2i+1 means item i revealed
+  // step=0: show start
 
-  // step=2i: show item i unresolved; step=2i+1: item i revealed
-  const itemIdx = Math.floor(step / 2);
-  const isRevealed = step % 2 === 1;
+  // step=0: start; step=1: item0 unresolved; step=2: item0 revealed; step=3: item1 unresolved; etc.
+  const itemIdx = step === 0 ? -1 : Math.floor((step - 1) / 2); // which item is current (-1=none)
+  const isRevealed = step > 0 && (step % 2 === 0); // even step (>=2) = current item revealed
 
+  // Start wrap
+  if (startEl) startEl.style.display = (step === 0) ? '' : 'none';
+
+  // Item cards
   items.forEach((card, i) => {
     const isCurrent = i === itemIdx;
     card.style.display = isCurrent ? '' : 'none';
-    const wasRevealed = card.classList.contains('revealed');
     card.classList.toggle('revealed', isCurrent && isRevealed);
-    // Mark correct/incorrect buttons on reveal
-    if (isCurrent && isRevealed && !wasRevealed) {
-      const correctDir = card.dataset.hlCorrect;
-      card.querySelectorAll('.q-hl-btn').forEach(btn => {
-        btn.classList.toggle('correct', btn.dataset.hlDir === correctDir);
-      });
-    }
-    if (!isRevealed || !isCurrent) {
-      card.querySelectorAll('.q-hl-btn').forEach(btn => btn.classList.remove('correct'));
-    }
+  });
+
+  // History items: show items 0..histCount-1
+  // When item is revealed (odd step), it's still shown in place — not in history yet
+  // When next even step, it moves to history
+  const inHistory = isRevealed ? itemIdx : itemIdx; // same — only items BEFORE current are in history
+  histItems.forEach((item, i) => {
+    item.style.display = i < itemIdx ? '' : 'none';
   });
 }
 
@@ -2481,6 +2494,7 @@ function buildQuestionSlide(ep, q) {
 
   switch (q.type) {
     case 'two_choice': body = renderTwoChoice(q); break;
+    case 'multiple_choice': body = renderMultipleChoice(q); break;
     case 'over_under': body = renderOverUnder(q); break;
     case 'guess_pct': body = renderGuessPct(q); break;
     case 'name_as_many': body = renderNameAsMany(q); break;
@@ -2496,6 +2510,7 @@ function buildQuestionSlide(ep, q) {
   // can target the right slides.
   const typeClasses = {
     'two_choice': '',
+    'multiple_choice': '',
     'over_under': '',
     'guess_pct': ' q-guess-slide',
     'name_as_many': ' q-name-slide',
@@ -2560,6 +2575,7 @@ function richBlock(s) {
 function formatLabelForType(t) {
   return ({
     two_choice: 'More people believe…',
+    multiple_choice: 'Which is most common?',
     over_under: 'Over or under?',
     guess_pct: 'Guess the percentage',
     name_as_many: 'Name as many…',
@@ -2577,6 +2593,21 @@ function renderTwoChoice(q) {
       ${opts.map((o, i) => `<div class="q-option${q.correct === i ? ' winner' : ''}">
         <div class="q-option-label">${String.fromCharCode(65 + i)}</div>
         <div class="q-option-text">${safeRich(o.text || '')}</div>
+        <div class="q-option-pct">${o.pct != null ? escHtml(o.pct) + '%' : ''}</div>
+      </div>`).join('')}
+    </div>
+    ${renderSourceStrip(q)}`;
+}
+
+function renderMultipleChoice(q) {
+  const opts = q.options || [];
+  // With 3+ options, shrink the option text so they all fit in the 2-col grid
+  const textSizeClass = opts.length > 2 ? ' q-option-text-sm' : '';
+  return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
+    <div class="q-options q-options-mc">
+      ${opts.map((o, i) => `<div class="q-option${q.correct === i ? ' winner' : ''}">
+        <div class="q-option-label">${String.fromCharCode(65 + i)}</div>
+        <div class="q-option-text${textSizeClass}">${safeRich(o.text || '')}</div>
         <div class="q-option-pct">${o.pct != null ? escHtml(o.pct) + '%' : ''}</div>
       </div>`).join('')}
     </div>
@@ -2699,7 +2730,7 @@ function renderGuessBreakdown(q) {
   const opts = q.options || [];
   return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
     <div class="q-break-rows">
-      ${opts.map((o, i) => `<div class="q-break-row" data-break-idx="${i}">
+      ${opts.map(o => `<div class="q-break-row">
         <div class="q-break-label">${safeRich(o.label || '')}</div>
         <div class="q-break-pct">${o.pct != null ? escHtml(o.pct) + '%' : ''}</div>
       </div>`).join('')}
@@ -2838,7 +2869,6 @@ function isContentType(type) { return CONTENT_TYPES.includes(type); }
 
 function buildItemSlide(ep, q) {
   if (isContentType(q.type)) return buildContentSlide(q);
-  if (q.type === 'tiebreaker') return ''; // tiebreaker slides are injected on-demand by the presenter
   return buildQuestionSlide(ep, q);
 }
 
@@ -2864,8 +2894,6 @@ function showPicker() {
   state.current = 0;
   state.revealed = {};
   state.showScoresInjected = false;
-  state.tiebreakerInjected = false;
-  state.tiebreakerAfter = -1;
 
   hintEl.style.display = 'none';
   navEl.style.display = 'none';
@@ -2963,8 +2991,6 @@ function launchGame() {
   state.phase = 'play';
   state.revealed = {};
   state.showScoresInjected = false;
-  state.tiebreakerInjected = false;
-  state.tiebreakerAfter = -1;
   buildNav();
   renderCloseSlide();
   goTo(1);
@@ -3017,24 +3043,12 @@ function applyRevealedClasses() {
     if (!s.classList.contains('q-slide')) return;
     const wasRevealed = s.classList.contains('revealed');
     const rankList = s.querySelector('.q-rank-stage');
-    const hlStage = s.querySelector('.q-hl-current');
     if (rankList) {
       // Ranking: state.revealed[k] is a count (0..N); slide-level 'revealed' only when full
       const count = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
       const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
       applyRankingState(s, count);
       s.classList.toggle('revealed', count >= total && total > 0);
-    } else if (s.classList.contains('q-break-slide')) {
-      const count = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
-      const total = s.querySelectorAll('.q-break-row').length;
-      applyBreakdownState(s, count);
-      s.classList.toggle('revealed', count >= total && total > 0);
-    } else if (hlStage) {
-      const step = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : -1;
-      const hlItems = hlStage.querySelectorAll('.q-hl-item-card');
-      const maxStep = hlItems.length * 2 - 1;
-      applyHigherLowerState(s, step);
-      s.classList.toggle('revealed', step >= maxStep && maxStep >= 0);
     } else {
       s.classList.toggle('revealed', !!(k && state.revealed[k]));
     }
@@ -3073,25 +3087,11 @@ function handleAdvance() {
         return;
       }
       // already fully revealed → fall through to advance
-    } else if (slide.classList.contains('q-break-slide')) {
-      const rows = slide.querySelectorAll('.q-break-row');
-      const total = rows.length;
-      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
-      if (cur < total) {
-        const nextCount = cur + 1;
-        if (k) state.revealed[k] = nextCount;
-        applyBreakdownState(slide, nextCount);
-        if (nextCount >= total) { slide.classList.add('revealed'); refitSlideQuestionText(slide); }
-        updateHint();
-        updatePresenterSurface();
-        broadcastState();
-        return;
-      }
     } else if (hlStage) {
       const items = hlStage.querySelectorAll('.q-hl-item-card');
       const total = items.length;
-      const maxStep = total * 2 - 1; // last step = last item revealed
-      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : -1;
+      const maxStep = total * 2;
+      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
       if (cur < maxStep) {
         const nextStep = cur + 1;
         if (k) state.revealed[k] = nextStep;
@@ -3140,26 +3140,13 @@ function handleRetreat() {
         broadcastState();
         return;
       }
-    } else if (slide.classList.contains('q-break-slide')) {
+    } else if (hlStage2) {
       const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : 0;
       if (cur > 0) {
-        const nextCount = cur - 1;
-        if (nextCount === 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextCount;
-        slide.classList.remove('revealed');
-        applyBreakdownState(slide, nextCount);
-        refitSlideQuestionText(slide);
-        updateHint();
-        updatePresenterSurface();
-        broadcastState();
-        return;
-      }
-    } else if (hlStage2) {
-      const cur = typeof state.revealed[k] === 'number' ? state.revealed[k] : -1;
-      if (cur >= 0) {
         const nextStep = cur - 1;
-        if (nextStep < 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextStep;
+        if (nextStep === 0) { if (k) delete state.revealed[k]; } else if (k) state.revealed[k] = nextStep;
         slide.classList.remove('revealed');
-        applyHigherLowerState(slide, nextStep < 0 ? -1 : nextStep);
+        applyHigherLowerState(slide, nextStep);
         refitSlideQuestionText(slide);
         updateHint();
         updatePresenterSurface();
@@ -3272,41 +3259,6 @@ function showScores() {
   buildNav();
   scaleFrames();
   goTo(insertAfter + 1);
-}
-
-function showTiebreaker() {
-  if (state.phase !== 'play' || !currentEpisode) return;
-  // If already on a tiebreaker slide, do nothing
-  if (slides[state.current] && slides[state.current].dataset.type === 'tiebreaker') return;
-  // Remove any existing injected tiebreaker first
-  if (state.tiebreakerInjected) removeTiebreakerSlide();
-  // Find the next unused tiebreaker question (not yet injected, or pick the first)
-  const tbQ = currentEpisode.questions.find(q => q.type === 'tiebreaker');
-  if (!tbQ) return;
-  // Build the tiebreaker slide HTML
-  const slideHtml = buildQuestionSlide(currentEpisode, tbQ);
-  const tmp = document.createElement('div');
-  tmp.innerHTML = slideHtml;
-  const newSlide = tmp.firstElementChild;
-  newSlide.dataset.type = 'tiebreaker'; // mark for easy removal
-  const cur = slides[state.current];
-  cur.insertAdjacentElement('afterend', newSlide);
-  slides = Array.from(deckEl.querySelectorAll('.slide'));
-  state.tiebreakerInjected = true;
-  state.tiebreakerAfter = state.current;
-  buildNav();
-  scaleFrames();
-  goTo(state.current + 1);
-}
-
-function removeTiebreakerSlide() {
-  const idx = slides.findIndex(s => s.dataset.type === 'tiebreaker');
-  if (idx < 0) { state.tiebreakerInjected = false; return; }
-  slides[idx].remove();
-  slides = Array.from(deckEl.querySelectorAll('.slide'));
-  state.tiebreakerInjected = false;
-  state.tiebreakerAfter = -1;
-  buildNav();
 }
 
 function removeScoresSlide() {
@@ -3464,8 +3416,6 @@ function broadcastState() {
       revealed: state.revealed,
       showScoresInjected: state.showScoresInjected,
       showScoresAfter: state.showScoresAfter,
-      tiebreakerInjected: state.tiebreakerInjected,
-      tiebreakerAfter: state.tiebreakerAfter,
     }
   });
 }
@@ -3616,26 +3566,6 @@ function applyAudienceState(p) {
     slides = Array.from(deckEl.querySelectorAll('.slide'));
   }
 
-  // Handle injected tiebreaker slide (audience side)
-  const hasTb = !!deckEl.querySelector('[data-type="tiebreaker"]');
-  if (state.tiebreakerInjected && !hasTb && currentEpisode) {
-    const tbQ = currentEpisode.questions.find(q => q.type === 'tiebreaker');
-    if (tbQ) {
-      const after = slides[state.tiebreakerAfter];
-      if (after) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = buildQuestionSlide(currentEpisode, tbQ);
-        const newSlide = tmp.firstElementChild;
-        newSlide.dataset.type = 'tiebreaker';
-        after.insertAdjacentElement('afterend', newSlide);
-        slides = Array.from(deckEl.querySelectorAll('.slide'));
-      }
-    }
-  } else if (!state.tiebreakerInjected && hasTb) {
-    deckEl.querySelector('[data-type="tiebreaker"]').remove();
-    slides = Array.from(deckEl.querySelectorAll('.slide'));
-  }
-
   // Apply current slide + revealed state
   slides.forEach((s, i) => s.classList.toggle('active', i === state.current));
   applyRevealedClasses();
@@ -3654,14 +3584,12 @@ const pbarPrev = document.getElementById('pbar-prev');
 const pbarNext = document.getElementById('pbar-next');
 const pbarAdvance = document.getElementById('pbar-advance');
 const pbarScores = document.getElementById('pbar-scores');
-const pbarTiebreaker = document.getElementById('pbar-tiebreaker');
 const pbarEnd = document.getElementById('pbar-end');
 
 if (pbarPrev) pbarPrev.addEventListener('click', e => { e.stopPropagation(); handleRetreat(); });
 if (pbarNext) pbarNext.addEventListener('click', e => { e.stopPropagation(); goTo(state.current + 1); });
 if (pbarAdvance) pbarAdvance.addEventListener('click', e => { e.stopPropagation(); handleAdvance(); });
 if (pbarScores) pbarScores.addEventListener('click', e => { e.stopPropagation(); showScores(); });
-if (pbarTiebreaker) pbarTiebreaker.addEventListener('click', e => { e.stopPropagation(); showTiebreaker(); });
 if (pbarEnd) pbarEnd.addEventListener('click', e => {
   e.stopPropagation();
   if (audienceWindow && !audienceWindow.closed) audienceWindow.close();
@@ -3744,23 +3672,7 @@ function updatePresenterSurface() {
   // Advance button label
   const rankList = cur ? cur.querySelector('.q-rank-stage') : null;
   const hlStage3 = cur ? cur.querySelector('.q-hl-current') : null;
-  const isBreakSlide = cur && cur.classList.contains('q-break-slide');
-  if (isBreakSlide) {
-    const rows = cur.querySelectorAll('.q-break-row');
-    const total = rows.length;
-    const k = slideKey(state.current);
-    const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
-    if (revealedCount < total) {
-      pbarAdvance.textContent = `Reveal ${revealedCount + 1} of ${total}`;
-      pbarAdvance.disabled = false;
-    } else if (state.current === slides.length - 1) {
-      pbarAdvance.textContent = 'End';
-      pbarAdvance.disabled = true;
-    } else {
-      pbarAdvance.textContent = 'Next →';
-      pbarAdvance.disabled = false;
-    }
-  } else if (rankList) {
+  if (rankList) {
     const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
     const k = slideKey(state.current);
     const revealedCount = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
@@ -3776,13 +3688,13 @@ function updatePresenterSurface() {
     }
   } else if (hlStage3) {
     const hlItems = hlStage3.querySelectorAll('.q-hl-item-card');
-    const maxStepHL = hlItems.length * 2 - 1;
+    const maxStepHL = hlItems.length * 2;
     const k2 = slideKey(state.current);
-    const curStepHL = (k2 && typeof state.revealed[k2] === 'number') ? state.revealed[k2] : -1;
+    const curStepHL = (k2 && typeof state.revealed[k2] === 'number') ? state.revealed[k2] : 0;
     if (curStepHL < maxStepHL) {
       const nextStep = curStepHL + 1;
-      const isRevealStep = nextStep % 2 === 1; // odd steps reveal
-      const itemNum = Math.floor(nextStep / 2) + 1;
+      const isRevealStep = nextStep % 2 === 0;
+      const itemNum = Math.floor((nextStep - 1) / 2) + 1;
       pbarAdvance.textContent = isRevealStep ? `Reveal Item ${itemNum}` : `Show Item ${itemNum}`;
       pbarAdvance.disabled = false;
     } else if (state.current === slides.length - 1) {
@@ -3805,13 +3717,6 @@ function updatePresenterSurface() {
   pbarPrev.disabled = state.current <= 1;
   pbarNext.disabled = state.current >= slides.length - 1;
   pbarScores.disabled = !state.scoring || !state.contestants.length || (cur && cur.dataset.type === 'scores');
-  // Show tiebreaker button only when episode has tiebreaker questions
-  const hasTiebreakerQ = !!(currentEpisode && currentEpisode.questions.some(q => q.type === 'tiebreaker'));
-  if (pbarTiebreaker) {
-    pbarTiebreaker.style.display = hasTiebreakerQ ? '' : 'none';
-    pbarTiebreaker.disabled = !hasTiebreakerQ || (cur && cur.dataset.type === 'tiebreaker');
-    pbarTiebreaker.textContent = state.tiebreakerInjected ? '⚡ Tiebreaker (active)' : '⚡ Tiebreaker';
-  }
 
   // Scoreboard
   renderPresenterScoreboard();
@@ -3835,9 +3740,9 @@ function renderSlideMeta(slide) {
     if (!q) return '';
     let parts = [];
     parts.push(`<strong>${escHtml(formatLabelForType(q.type))}</strong>`);
-    if (q.type === 'two_choice' && Array.isArray(q.options)) {
+    if ((q.type === 'two_choice' || q.type === 'multiple_choice') && Array.isArray(q.options)) {
       const correct = q.options[q.correct];
-      if (correct) parts.push(`Correct: <strong>${escHtml(correct.text || '')}</strong>${correct.pct != null ? ` (${correct.pct}%)` : ''}`);
+      if (correct) parts.push(`Correct: <strong>${String.fromCharCode(65 + q.correct)} — ${escHtml(correct.text || '')}</strong>${correct.pct != null ? ` (${correct.pct}%)` : ''}`);
     } else if (q.type === 'over_under') {
       parts.push(`Anchor: <strong>${q.number}%</strong>, correct: <strong>${q.correct}</strong>${q.actual != null ? `, actual: <strong>${q.actual}%</strong>` : ''}`);
     } else if (q.type === 'guess_pct') {
@@ -4390,6 +4295,7 @@ function renderQuestionsTab() {
           <div class="q-list-add-label">Question slides</div>
           <div class="q-list-add">
             <button class="btn btn-sm" data-add="two_choice">+ Two Choice</button>
+            <button class="btn btn-sm" data-add="multiple_choice">+ Multiple Choice</button>
             <button class="btn btn-sm" data-add="over_under">+ Over/Under</button>
             <button class="btn btn-sm" data-add="guess_pct">+ Guess %</button>
             <button class="btn btn-sm" data-add="name_as_many">+ Name as Many</button>
@@ -4481,6 +4387,7 @@ function makeBlankQuestion(type) {
   const base = { id, type, text: '' };
   switch (type) {
     case 'two_choice': return { ...base, label: '', options: [{ text: '', pct: null }, { text: '', pct: null }], correct: 0 };
+    case 'multiple_choice': return { ...base, options: [{ text: '', pct: null }, { text: '', pct: null }, { text: '', pct: null }, { text: '', pct: null }], correct: 0 };
     case 'over_under': return { ...base, number: 50, correct: 'over', actual: null, note: '' };
     case 'guess_pct': return { ...base, answer: null, note: '', source: '' };
     case 'name_as_many': return { ...base, prompt: '', answers: [], statLine: '', revealList: true, source: '' };
@@ -4512,6 +4419,7 @@ function renderQuestionEditor() {
   } else {
     switch (q.type) {
       case 'two_choice': body = editorTwoChoice(q); break;
+      case 'multiple_choice': body = editorMultipleChoice(q); break;
       case 'over_under': body = editorOverUnder(q); break;
       case 'guess_pct': body = editorGuessPct(q); break;
       case 'name_as_many': body = editorNameAsMany(q); break;
@@ -4637,6 +4545,29 @@ function editorTwoChoice(q) {
       <label>Correct option</label>
       <select id="qe-correct">
         ${q.options.map((_, i) => `<option value="${i}" ${q.correct === i ? 'selected' : ''}>Option ${String.fromCharCode(65 + i)}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function editorMultipleChoice(q) {
+  const opts = q.options || [];
+  return `
+    <div class="field">
+      <label>Options <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;">— 2 to 4 options</span></label>
+      <div id="qe-mc-options">
+        ${opts.map((o, i) => `
+          <div style="display:grid;grid-template-columns:1fr 90px 28px;gap:6px;align-items:center;margin-bottom:8px">
+            <input data-mc-text="${i}" value="${escHtml(o.text || '')}" placeholder="Option ${String.fromCharCode(65 + i)} text" maxlength="80">
+            <input data-mc-pct="${i}" type="number" step="0.1" value="${o.pct ?? ''}" placeholder="%" style="text-align:center">
+            <button class="btn btn-sm btn-danger" data-mc-del="${i}" style="padding:4px 8px" ${opts.length <= 2 ? 'disabled' : ''}>✕</button>
+          </div>`).join('')}
+      </div>
+      ${opts.length < 4 ? `<button class="btn btn-sm" id="qe-mc-add">+ Add option</button>` : ''}
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Correct option</label>
+      <select id="qe-mc-correct">
+        ${opts.map((_, i) => `<option value="${i}" ${q.correct === i ? 'selected' : ''}>Option ${String.fromCharCode(65 + i)}</option>`).join('')}
       </select>
     </div>`;
 }
@@ -5073,6 +5004,31 @@ function attachTypeListeners(q) {
       });
     });
     document.getElementById('qe-correct').addEventListener('change', e => { q.correct = parseInt(e.target.value, 10); });
+  }
+  if (q.type === 'multiple_choice') {
+    document.querySelectorAll('[data-mc-text]').forEach(inp => {
+      inp.addEventListener('input', () => { q.options[parseInt(inp.dataset.mcText, 10)].text = inp.value; });
+    });
+    document.querySelectorAll('[data-mc-pct]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        q.options[parseInt(inp.dataset.mcPct, 10)].pct = inp.value === '' ? null : parseFloat(inp.value);
+      });
+    });
+    document.querySelectorAll('[data-mc-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.mcDel, 10);
+        if (q.options.length <= 2) return;
+        q.options.splice(i, 1);
+        if (q.correct >= q.options.length) q.correct = q.options.length - 1;
+        renderQuestionEditor();
+      });
+    });
+    const addBtn = document.getElementById('qe-mc-add');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      if (q.options.length < 4) { q.options.push({ text: '', pct: null }); renderQuestionEditor(); }
+    });
+    const correctSel = document.getElementById('qe-mc-correct');
+    if (correctSel) correctSel.addEventListener('change', e => { q.correct = parseInt(e.target.value, 10); });
   }
   if (q.type === 'over_under') {
     document.getElementById('qe-number').addEventListener('input', e => { q.number = e.target.value === '' ? null : parseFloat(e.target.value); });
