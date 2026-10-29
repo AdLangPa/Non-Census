@@ -507,6 +507,12 @@ body::before {
 .q-options-mc { gap: 12px; }
 .q-options-mc .q-option { padding: 18px 24px; }
 .q-options-mc .q-option-pct { font-size: 48px; }
+/* 5+ options: single column, horizontal layout per row */
+.q-options-mc-list { grid-template-columns: 1fr; gap: 8px; }
+.q-options-mc-list .q-option { display: flex; align-items: center; padding: 12px 20px; text-align: left; gap: 16px; }
+.q-options-mc-list .q-option-label { margin-bottom: 0; flex-shrink: 0; }
+.q-options-mc-list .q-option-text { flex: 1; font-size: 20px !important; }
+.q-options-mc-list .q-option-pct { font-size: 36px; margin-top: 0; flex-shrink: 0; min-width: 90px; text-align: right; }
 .q-slide.revealed::after { content: none; }
 .q-slide .reveal-burst { display: none; }
 .q-slide.revealed > .slide-frame > .reveal-burst { display: none; }
@@ -2601,10 +2607,12 @@ function renderTwoChoice(q) {
 
 function renderMultipleChoice(q) {
   const opts = q.options || [];
-  // With 3+ options, shrink the option text so they all fit in the 2-col grid
-  const textSizeClass = opts.length > 2 ? ' q-option-text-sm' : '';
+  // ≤4 opts: 2-col grid. 5+ opts: single column, more compact.
+  const many = opts.length > 4;
+  const gridClass = many ? 'q-options-mc q-options-mc-list' : 'q-options-mc';
+  const textSizeClass = (opts.length > 2 || many) ? ' q-option-text-sm' : '';
   return `<p class="q-text q-text-sm">${safeRich(q.text || '')}</p>
-    <div class="q-options q-options-mc">
+    <div class="q-options ${gridClass}">
       ${opts.map((o, i) => `<div class="q-option${q.correct === i ? ' winner' : ''}">
         <div class="q-option-label">${String.fromCharCode(65 + i)}</div>
         <div class="q-option-text${textSizeClass}">${safeRich(o.text || '')}</div>
@@ -4553,16 +4561,16 @@ function editorMultipleChoice(q) {
   const opts = q.options || [];
   return `
     <div class="field">
-      <label>Options <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;">— 2 to 4 options</span></label>
+      <label>Options</label>
       <div id="qe-mc-options">
         ${opts.map((o, i) => `
           <div style="display:grid;grid-template-columns:1fr 90px 28px;gap:6px;align-items:center;margin-bottom:8px">
-            <input data-mc-text="${i}" value="${escHtml(o.text || '')}" placeholder="Option ${String.fromCharCode(65 + i)} text" maxlength="80">
+            <input data-mc-text="${i}" value="${escHtml(o.text || '')}" placeholder="Option ${String.fromCharCode(65 + i)} text" maxlength="120">
             <input data-mc-pct="${i}" type="number" step="0.1" value="${o.pct ?? ''}" placeholder="%" style="text-align:center">
             <button class="btn btn-sm btn-danger" data-mc-del="${i}" style="padding:4px 8px" ${opts.length <= 2 ? 'disabled' : ''}>✕</button>
           </div>`).join('')}
       </div>
-      ${opts.length < 4 ? `<button class="btn btn-sm" id="qe-mc-add">+ Add option</button>` : ''}
+      <button class="btn btn-sm" id="qe-mc-add">+ Add option</button>
     </div>
     <div class="field" style="margin-top:14px;">
       <label>Correct option</label>
@@ -5025,7 +5033,7 @@ function attachTypeListeners(q) {
     });
     const addBtn = document.getElementById('qe-mc-add');
     if (addBtn) addBtn.addEventListener('click', () => {
-      if (q.options.length < 4) { q.options.push({ text: '', pct: null }); renderQuestionEditor(); }
+      q.options.push({ text: '', pct: null }); renderQuestionEditor();
     });
     const correctSel = document.getElementById('qe-mc-correct');
     if (correctSel) correctSel.addEventListener('change', e => { q.correct = parseInt(e.target.value, 10); });
