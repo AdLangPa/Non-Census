@@ -27,7 +27,6 @@
       "id": "q_mvspetr2d89",
       "type": "two_choice",
       "text": "Who do Canadians think would do better at a new job:",
-      "label": "",
       "options": [
         {
           "text": "Justin Trudeau as a TV Host",
@@ -36,6 +35,30 @@
         {
           "text": "Ben Mulroney a Prime Minister",
           "pct": 26
+        }
+      ],
+      "correct": 0
+    },
+    {
+      "id": "q_mvtp6xqt2ew",
+      "type": "multiple_choice",
+      "text": "At what age do most Canadians think children should stop Trick or Treating?",
+      "options": [
+        {
+          "text": "They should never start",
+          "pct": null
+        },
+        {
+          "text": "Under 10 years old",
+          "pct": null
+        },
+        {
+          "text": "11-12 years old",
+          "pct": null
+        },
+        {
+          "text": "13-14 years old",
+          "pct": null
         }
       ],
       "correct": 0
