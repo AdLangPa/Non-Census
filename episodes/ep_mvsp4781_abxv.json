@@ -46,22 +46,30 @@
       "options": [
         {
           "text": "They should never start",
-          "pct": null
+          "pct": 3
         },
         {
           "text": "Under 10 years old",
-          "pct": null
+          "pct": 9
         },
         {
           "text": "11-12 years old",
-          "pct": null
+          "pct": 21
         },
         {
           "text": "13-14 years old",
-          "pct": null
+          "pct": 27
+        },
+        {
+          "text": "15+ years old",
+          "pct": 20
+        },
+        {
+          "text": "They should never stop",
+          "pct": 14
         }
       ],
-      "correct": 0
+      "correct": 3
     }
   ]
 }
