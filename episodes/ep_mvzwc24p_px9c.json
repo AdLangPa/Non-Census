@@ -83,10 +83,6 @@
       "text": "Which generation has had things the easiest?",
       "items": [
         {
-          "name": "The Silent Generation (born ~1928–1945)",
-          "stat": "2%"
-        },
-        {
           "name": "Baby Boomers (born ~1946–1964)",
           "stat": "28%"
         },
@@ -101,6 +97,10 @@
         {
           "name": "Generation Z  (born ~1997–2012)",
           "stat": "12%"
+        },
+        {
+          "name": "The Silent Generation (born ~1928–1945)",
+          "stat": "2%"
         }
       ],
       "source": "YouGov Canada, October 2026, n 1,001"
