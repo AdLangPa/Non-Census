@@ -80,30 +80,34 @@
     {
       "id": "q_mw2ezri2ia9",
       "type": "ranking",
-      "text": "Which generation has had things the easiest?",
+      "text": "Canadians were asked, \"If Canada's national capital had to be moved away from Ottawa, which city should be chosen instead?\"",
       "items": [
         {
-          "name": "Baby Boomers (born ~1946–1964)",
-          "stat": "28%"
+          "name": "Toronto",
+          "stat": "42%"
         },
         {
-          "name": "Generation X (born ~1965–1980)",
-          "stat": "19%"
-        },
-        {
-          "name": "Millennials (born ~1981–1996)",
+          "name": "Montreal ",
           "stat": "12%"
         },
         {
-          "name": "Generation Z  (born ~1997–2012)",
-          "stat": "12%"
+          "name": "Vancouver",
+          "stat": "10%"
         },
         {
-          "name": "The Silent Generation (born ~1928–1945)",
-          "stat": "2%"
+          "name": "Winnipeg",
+          "stat": "8%"
+        },
+        {
+          "name": "Calgary",
+          "stat": "6%"
+        },
+        {
+          "name": "Edmonton",
+          "stat": "4%"
         }
       ],
-      "source": "YouGov Canada, October 2026, n 1,001"
+      "source": "YouGov Canada, August 2026, n 1,005"
     },
     {
       "id": "q_mw2h5ekq8m5",
