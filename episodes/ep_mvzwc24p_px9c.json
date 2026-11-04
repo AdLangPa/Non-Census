@@ -35,14 +35,13 @@
       "id": "q_mw2cz42e6ug",
       "type": "two_choice",
       "text": "What percentage of adults would let their significant other have unsupervised access to their phone for 24 hours?",
-      "label": "",
       "options": [
         {
-          "text": "20",
-          "pct": 0.3
+          "text": "20%",
+          "pct": null
         },
         {
-          "text": "54",
+          "text": "54%",
           "pct": null
         }
       ],
