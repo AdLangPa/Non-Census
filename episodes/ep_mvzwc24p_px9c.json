@@ -104,6 +104,24 @@
         }
       ],
       "source": "YouGov Canada, October 2026, n 1,001"
+    },
+    {
+      "id": "q_mw2h5ekq8m5",
+      "type": "over_under",
+      "text": "In the last year, what percentage of Canadians have hidden in the bathroom at work to take a break?",
+      "number": 25,
+      "correct": "under",
+      "actual": 14,
+      "note": "",
+      "source": "YouGov Canada, September 2026, n 1,004"
+    },
+    {
+      "id": "q_mw2h6lzod3t",
+      "type": "tiebreaker",
+      "text": "What percentage of Canadian adults prefer coffee over tea?",
+      "answer": 52,
+      "unit": "%",
+      "source": "YouGov Canada, August 2026, n 1,005"
     }
   ]
 }
