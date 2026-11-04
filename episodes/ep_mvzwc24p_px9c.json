@@ -49,48 +49,30 @@
       "source": "YouGov Canada, October 2026, n 1,001"
     },
     {
-      "id": "q_mw2d5axksgt",
-      "type": "two_choice",
-      "text": "What do Canadians think is more likely to happen in the next 25 years?",
-      "label": "",
-      "options": [
-        {
-          "text": "NDP form federal government",
-          "pct": 12
-        },
-        {
-          "text": "Humans make contact with intelligent life from space",
-          "pct": 18
-        }
-      ],
-      "correct": 1,
-      "source": "YouGov Canada, October 2026, n 1,001"
-    },
-    {
       "id": "q_mw2dgaqqgr6",
       "type": "higher_lower",
       "text": "Over/Under\nIn the next 25 years...",
       "startPct": 15,
       "items": [
         {
-          "answer": "NDP will form government",
+          "answer": "NDP forms government",
           "pct": 12
         },
         {
-          "answer": "Humans will make contact with intelligent human life from space",
+          "answer": "Humans make contact with intelligent human life from space",
           "pct": 18
         },
         {
-          "answer": "World peace will be achieved",
-          "pct": 9
+          "answer": "The Blue Jays win the World Series",
+          "pct": 31
         },
         {
-          "answer": "AI will replace most human labour",
+          "answer": "AI replaces most human labour",
           "pct": 38
         },
         {
-          "answer": "The Blue Jays win the World Series",
-          "pct": 22
+          "answer": "World Peace achieved",
+          "pct": 31
         }
       ],
       "source": "YouGov Canada, October 2026, n 1,001"
