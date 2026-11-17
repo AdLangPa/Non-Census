@@ -3052,12 +3052,20 @@ function applyRevealedClasses() {
     if (!s.classList.contains('q-slide')) return;
     const wasRevealed = s.classList.contains('revealed');
     const rankList = s.querySelector('.q-rank-stage');
+    const hlStage = s.querySelector('.q-hl-current');
     if (rankList) {
       // Ranking: state.revealed[k] is a count (0..N); slide-level 'revealed' only when full
       const count = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
       const total = parseInt(rankList.dataset.rankTotal, 10) || 0;
       applyRankingState(s, count);
       s.classList.toggle('revealed', count >= total && total > 0);
+    } else if (hlStage) {
+      // Higher/Lower: state.revealed[k] is a step count; fully revealed when all items done
+      const step = (k && typeof state.revealed[k] === 'number') ? state.revealed[k] : 0;
+      const items = hlStage.querySelectorAll('.q-hl-item-card');
+      const maxStep = items.length * 2;
+      applyHigherLowerState(s, step);
+      s.classList.toggle('revealed', step >= maxStep && maxStep > 0);
     } else {
       s.classList.toggle('revealed', !!(k && state.revealed[k]));
     }
